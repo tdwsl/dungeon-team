@@ -1,5 +1,6 @@
 #include <SDL2/SDL.h>
 #include <assert.h>
+#include "sdl.h"
 
 SDL_Window *window;
 SDL_Renderer *renderer;
@@ -22,7 +23,7 @@ void initSDL() {
 
   /* create screen texture */
   screen = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
-      SDL_TEXTUREACCESS_TARGET, 160, 100);
+      SDL_TEXTUREACCESS_TARGET, WIDTH, HEIGHT);
   textures[numTextures++] = screen;
   SDL_SetRenderTarget(renderer, screen);
 }
@@ -53,11 +54,11 @@ SDL_Texture *loadTexture(const char *filename) {
 SDL_Rect getDisplayRect() {
   int w, h;
   SDL_GetWindowSize(window, &w, &h);
-  float xs = (float)w/160.0, ys = (float)h/100.0;
+  float xs = (float)w/(float)WIDTH, ys = (float)h/(float)HEIGHT;
   float s = (xs > ys) ? ys : xs;
   if(s > 1)
     s = (int)s;
-  SDL_Rect r = {w/2-(160/2)*s, h/2-(100/2)*s, 160*s, 100*s};
+  SDL_Rect r = {w/2-(WIDTH/2)*s, h/2-(HEIGHT/2)*s, WIDTH*s, HEIGHT*s};
   return r;
 }
 

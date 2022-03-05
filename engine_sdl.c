@@ -5,8 +5,8 @@
 #include <stdbool.h>
 #include "sdl.h"
 
-#define UI_W (160/4)
-#define UI_H (100/6)
+#define UI_W (WIDTH/4)
+#define UI_H (HEIGHT/6)
 
 int uicursorXY=0;
 char uichars[UI_W*UI_H] = {0};
@@ -119,7 +119,7 @@ int l_drawMap(lua_State *l) {
   lua_pop(l, 2);
 
   /* get x and y offsets */
-  int xo = -cursorX*8 + 160/2, yo = -cursorY*8 + 100/2;
+  int xo = -cursorX*8 + WIDTH/2, yo = -cursorY*8 + HEIGHT/2;
 
   lua_getfield(l, 1, "map"); /* map */
   lua_getfield(l, 2, "map"); /* fov */
@@ -167,7 +167,7 @@ void draw(lua_State *l) {
   /* draw cursor */
   if(mapDrawn) {
     SDL_Rect src = {0, 0, 8, 8};
-    SDL_Rect dst = {-cursorX*8+cursorX*8+160/2, -cursorY*8+cursorY*8+100/2, 8, 8};
+    SDL_Rect dst = {WIDTH/2, HEIGHT/2, 8, 8};
     SDL_RenderCopy(renderer, cursortex, &src, &dst);
   }
 
@@ -282,6 +282,7 @@ int main(int argc, char *argv[]) {
   tileset = loadTexture("img/tileset.bmp");
   charset = loadTexture("img/font.bmp");
   cursortex = loadTexture("img/cursor.bmp");
+  SDL_SetTextureAlphaMod(cursortex, 0x88);
 
   lua_State *l = luaL_newstate();
   luaL_openlibs(l);
