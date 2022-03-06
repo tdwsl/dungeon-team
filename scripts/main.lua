@@ -12,7 +12,8 @@ local level = {
 local cursor = {x=0, y=0}
 local actors = {actor:new(actor.rogue, 1, true, 0, 0), actor:new(actor.rogue, 1, true, 0, 0)}
 
-level.map:generate_dungeon(1)
+--level.map:generate_dungeon(1)
+level.map:generate_overmap()
 level.fov:init(level.map.w, level.map.h, tile.visible)
 
 function draw()

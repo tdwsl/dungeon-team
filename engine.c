@@ -37,7 +37,7 @@ const char actorchars[] = {
 };
 const char mapchars[] = {
   ',','^','~','o', '#','#','#','#',
-  '?','?','~','.', '+','/','c','c',
+  'd','t','~','.', '+','/','c','c',
   '>','<','-','?', '?','?','?','?',
   '?','?','?','?', '?','?','?','?',
 };
@@ -137,7 +137,6 @@ int l_drawMap(lua_State *l) {
   int xo = -cursorX*8 + WIDTH/2, yo = -cursorY*8 + HEIGHT/2;
 #else
   int xo = -cursorX + WIDTH/2, yo = -cursorY + HEIGHT/2;
-  attron(COLOR_PAIR(BLUE_BLACK));
 #endif
 
   lua_getfield(l, 1, "map"); /* map */
@@ -154,6 +153,8 @@ int l_drawMap(lua_State *l) {
       continue;
     if(t == 0)
       continue;
+    if(t == -1)
+      t = 0;
 
 #ifndef DT_CURSES
     if(visible == 2)
@@ -177,22 +178,31 @@ int l_drawMap(lua_State *l) {
 #else
     char c = mapchars[t];
 
+    if(c=='>'||c=='<'||c=='#'||c=='.'||c=='~')
+      attrset(COLOR_PAIR(BLUE_BLACK));
+    else if(c == '-' || c == '+' || c == '/')
+      attrset(COLOR_PAIR(RED_BLACK));
+    else if(c == ',')
+      attrset(COLOR_PAIR(GREEN_BLACK));
+    else if(c == '^' || c == 'o')
+      attrset(COLOR_PAIR(YELLOW_BLACK));
+    else
+      attrset(A_NORMAL);
+
     if(visible != 2) {
       if(c == '.' || c == ',' || c == '-')
         continue;
       attron(A_DIM);
     }
-    if(c == '.' || c == ',' || c == '-')
+    if(c == '.' || c == ',' || c == '-' || c == '~' || c == '^')
       attron(A_DIM);
 
     mvaddch(i/w+yo, i%w+xo, c);
-
-    attroff(A_DIM);
 #endif
   }
 
 #ifdef DT_CURSES
-  attroff(COLOR_PAIR(BLUE_BLACK));
+  attrset(A_NORMAL);
 #endif
 
   lua_pop(l, -1);
@@ -400,7 +410,17 @@ int main(int argc, char *argv[]) {
   addLibrary(l);
 
   if(luaL_dofile(l, "scripts/main.lua"))
+#ifndef DT_CURSES
     printf("%s\n", lua_tostring(l, -1));
+#else
+  {
+    clear();
+    move(1, 1);
+    printw("%s", lua_tostring(l, -1));
+    refresh();
+    getch();
+  }
+#endif
 
 #ifndef DT_CURSES
   endSDL();

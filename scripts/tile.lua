@@ -12,6 +12,13 @@ local tile = {
   upstairs = 17,
   downstairs = 16,
 
+  water = 10,
+  grass = -1,
+  mountain = 1,
+  tree = 3,
+  dungeon = 8,
+  town = 9,
+
   unknown = 0,
   known = 1,
   visible = 2

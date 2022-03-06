@@ -249,7 +249,118 @@ function map:generate_dungeon(depth)
 
 end
 
+function map:spread(t, dtiles, n)
+  for i = 1, n do
+    for j = 0, self.w*self.h-1 do
+      if self.map[j] == t then
+        local d = dirs.dirs4[math.random(4)]
+        local x, y = j%self.w+d.x, math.floor(j/self.w)+d.y
+        local ct = self:get_tile(x, y)
+
+        local blocked = true
+        for l, dt in ipairs(dtiles) do
+          if ct == dt then
+            blocked = false
+            break
+          end
+        end
+
+        if not blocked then
+          self.map[y*self.w+x] = tile.out
+        end
+      end
+    end
+
+    for j = 0, self.w*self.h-1 do
+      if self.map[j] == tile.out then
+        self.map[j] = t
+      end
+    end
+  end
+end
+
+function map:expand(t, dtiles, n)
+  for i = 1, n do
+
+    for j = 0, self.w*self.h-1 do
+      if self.map[j] == t then
+        for k, d in ipairs(dirs.dirs4) do
+          local x, y = j%self.w+d.x, math.floor(j/self.w)+d.y
+          local ct = self:get_tile(x, y)
+
+          local blocked = true
+          for l, dt in ipairs(dtiles) do
+            if ct == dt then
+              blocked = false
+              break
+            end
+          end
+
+          if not blocked then
+            self.map[y*self.w+x] = tile.out
+          end
+        end
+      end
+    end
+
+    for j = 0, self.w*self.h-1 do
+      if self.map[j] == tile.out then
+        self.map[j] = t
+      end
+    end
+
+  end
+end
+
 function map:generate_overmap()
+  self:init(40+math.random(15), 20+math.random(10), tile.water)
+
+  for i = 1, 3 do
+    local x = math.floor(self.w*0.4) + math.random(math.floor(self.w*0.2))
+    local y = math.floor(self.h*0.4) + math.random(math.floor(self.h*0.2))
+    self.map[y*self.w+x] = tile.grass
+  end
+
+  self:spread(tile.grass, {tile.water}, 10)
+  self:expand(tile.grass, {tile.water}, 2)
+
+  for i = 1, 50 do
+    local x = math.floor(self.w*0.2) + math.random(math.floor(self.w*0.6))
+    local y = math.floor(self.h*0.2) + math.random(math.floor(self.h*0.6))
+    if self.map[y*self.w+x] == tile.grass then
+      self.map[y*self.w+x] = tile.tree
+    end
+  end
+
+  for i = 1, 23 do
+    local x = math.floor(self.w*0.2) + math.random(math.floor(self.w*0.6))
+    local y = math.floor(self.h*0.2) + math.random(math.floor(self.h*0.6))
+    if self.map[y*self.w+x] == tile.grass then
+      self.map[y*self.w+x] = tile.mountain
+    end
+  end
+
+  self:spread(tile.mountain, {tile.water, tile.grass, tile.tree}, 3)
+  self:expand(tile.mountain, {tile.grass}, 1)
+
+  -- place key locations
+
+  self.map[math.floor(self.h/2)*self.w+math.floor(self.w/2)] = tile.dungeon
+
+  for i = math.floor(self.h*0.3)*self.w, math.floor(self.w*self.h/2) do
+    if self.map[i] == tile.grass then
+      self.map[i] = tile.town
+      break
+    end
+  end
+
+  for i = self.w*math.floor(self.h*0.7)-1, math.floor(self.w*self.h/2), -1 do
+    if self.map[i] == tile.grass then
+      self.map[i] = tile.town
+      break
+    end
+  end
+
 end
 
 return map
