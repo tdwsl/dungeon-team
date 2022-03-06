@@ -9,7 +9,7 @@ local actor = {
   ranger = {name="Ranger",
     base={maxhp=8, str=6, dex=6, ranged=10, maxmp=1},
     mod={maxhp=0.4, str=0.3, dex=0.5, ranged=0.6, maxmp=0.01},
-    inv={item.bow, 1, item.arrow, 24},
+    inv={{1, item.bow}, {24, item.arrow}},
     spelltypes={healing=0.3, offensive=0.3},
     spells={},
     graphic=3,
@@ -17,7 +17,7 @@ local actor = {
   warrior = {name="Warrior",
     base={maxhp=10, str=8, dex=4, ranged=3, maxmp=1},
     mod={maxhp=0.6, str=0.6, dex=0.2, ranged=0.1, maxmp=0.01},
-    inv={item.shortsword, 1, item.shield, 1, item.healing_potion, 1},
+    inv={{1, item.shortsword}, {1, item.shield}, {1, item.healing_potion}},
     spelltypes={healing=0.2, offensive=0.3},
     spells={},
     graphic=1, friendly=true
@@ -41,7 +41,7 @@ local actor = {
   rogue = {name="Rogue",
     base={maxhp=6, str=5, dex=8, ranged=4, maxmp=2},
     mod={maxhp=0.4, str=0.4, dex=0.6, ranged=0.3, maxmp=0.1},
-    inv={item.dagger, 1, item.throwing_knives, 8},
+    inv={{1, item.dagger}, {8, item.throwing_knives}},
     spelltypes={healing=0.4, offensive=0.5},
     spells={},
     graphic=2
@@ -63,6 +63,7 @@ local actor = {
     mod={maxhp=0.4, str=0.4, dex=0, ranged=0, maxmp=0.3},
     inv={},
     spelltypes={healing=0.3, offensive=0},
+    spells={},
     graphic=11
   },
   skeleton = {name="Skeleton",
@@ -70,6 +71,7 @@ local actor = {
     mod={maxhp=0.3, str=0.2, dex=0.4, ranged=0, maxmp=0},
     inv={},
     spelltypes={healing=0, offensive=0},
+    spells={},
     graphic=12, undead=true
   }
 }
@@ -84,8 +86,25 @@ function actor:calculate_stats()
   self.maxmp = util.nzfloor(self.base.maxmp * (1 + self.mod.maxmp*mul))
 end
 
-function actor:new(type, level, ally)
-  local a = type
+function actor:new(type, level, ally, x, y)
+  local a = {}
+  a.base = type.base
+  a.mod = type.mod
+  a.spelltypes = type.spelltypes
+  a.graphic = type.graphic
+  a.undead = type.undead
+  a.friendly = type.friendly
+  a.inventory = {}
+  for i, t in ipairs(type.inv) do
+    for j = 1, t[1] do
+      a.inventory[#a.inventory+1] = item:new(t[2], level)
+    end
+  end
+  a.spells = {}
+  for i, s in ipairs(type.spells) do
+    a.spells[#a.spells+1] = s
+  end
+
   setmetatable(a, self)
   self.__index = self
 
@@ -105,6 +124,14 @@ function actor:new(type, level, ally)
 
   a.mp = a.maxmp
   a.hp = a.maxhp
+
+  if x and y then
+    a.x = x
+    a.y = y
+  else
+    a.x = 0
+    a.y = 0
+  end
 
   return a
 end

@@ -20,7 +20,7 @@ local item = {
 
   log = {},
 
-  shortsword={type=melee, size=4, sharp=6, blunt=2,
+  shortsword={type=melee, size=6, sharp=8, blunt=2,
     mod={size=0, sharp=0.5, blunt=0},
     name="Shortsword", value=100
   },
@@ -28,7 +28,11 @@ local item = {
     mod={size=-0.1, sharp=0.4, blunt=0},
     name="Throwing Knives", value=25
   },
-  longsword={type=melee, size=8, sharp=8, blunt=3,
+  dagger={type=melee, size=4, sharp=6, blunt=1,
+    mod={size=0, sharp=0.4, blunt=0},
+    name="Dagger", value=75
+  },
+  longsword={type=melee, size=8, sharp=12, blunt=3,
     mod={size=0, sharp=0.5, blunt=0.05},
     name="Longsword", value=150,
   },

@@ -15,6 +15,8 @@ bool mapDrawn;
 int cursorX=0;
 int cursorY=0;
 int getchdelay = -1;
+int fov[300*300];
+int mapW, mapH;
 
 SDL_Texture *tileset, *actorsheet, *charset, *cursortex;
 
@@ -116,6 +118,8 @@ int l_drawMap(lua_State *l) {
   lua_getfield(l, 1, "h");
 
   int w = lua_tointeger(l, 3), h = lua_tointeger(l, 4);
+  mapW = w;
+  mapH = h;
   lua_pop(l, 2);
 
   /* get x and y offsets */
@@ -128,12 +132,18 @@ int l_drawMap(lua_State *l) {
     lua_geti(l, 3, i);
     lua_geti(l, 4, i);
     int t = lua_tointeger(l, 5);
-    bool visible = lua_tointeger(l, 6);
+    int visible = lua_tointeger(l, 6);
+    fov[i] = visible;
     lua_pop(l, 2);
     if(!visible)
       continue;
     if(t == 0)
       continue;
+
+    if(visible == 2)
+      SDL_SetTextureColorMod(tileset, 0xFF, 0xFF, 0xFF);
+    else
+      SDL_SetTextureColorMod(tileset, 0x88, 0x88, 0x88);
 
     if(t == 4)
       if(i/w+1 < h) {
@@ -150,6 +160,28 @@ int l_drawMap(lua_State *l) {
   }
 
   lua_pop(l, -1);
+
+  return 0;
+}
+
+int l_drawActor(lua_State *l) {
+  lua_getfield(l, 1, "x");
+  lua_getfield(l, 1, "y");
+  lua_getfield(l, 1, "graphic");
+  int x = lua_tointeger(l, 2);
+  int y = lua_tointeger(l, 3);
+  int t = lua_tointeger(l, 4);
+  lua_pop(l, -1);
+
+  if(fov[y*mapW+x] != 2)
+    return 0;
+
+  int xo = -cursorX*8 + WIDTH/2, yo = -cursorY*8 + HEIGHT/2;
+
+  SDL_Rect src = {(t%8)*8, (t/8)*8, 8, 8};
+  SDL_Rect dst = {x*8+xo, y*8+yo, 8, 8};
+
+  SDL_RenderCopy(renderer, actorsheet, &src, &dst);
 
   return 0;
 }
@@ -186,6 +218,7 @@ int l_getch(lua_State *l) {
   int c = -1;
   bool quit = false;
 
+  SDL_StartTextInput();
   while(!quit && c == -1) {
     SDL_Event ev;
 
@@ -194,7 +227,9 @@ int l_getch(lua_State *l) {
       case SDL_QUIT:
         quit = true;
         break;
-
+      case SDL_TEXTINPUT:
+        c = *ev.text.text;
+        break;
       case SDL_KEYDOWN:
         c = ev.key.keysym.sym;
         break;
@@ -202,6 +237,7 @@ int l_getch(lua_State *l) {
 
     draw(l);
   }
+  SDL_StopTextInput();
 
   if(quit) {
     luaL_error(l, "quit");
@@ -263,6 +299,8 @@ void addLibrary(lua_State *l) {
 
   lua_pushcfunction(l, l_drawMap);
   lua_setfield(l, 1, "draw_map");
+  lua_pushcfunction(l, l_drawActor);
+  lua_setfield(l, 1, "draw_actor");
 
   lua_pushcfunction(l, l_getch);
   lua_setfield(l, 1, "getch");
