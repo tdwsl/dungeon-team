@@ -3,8 +3,15 @@
 local item = require("scripts/item")
 local spell = require("scripts/spell")
 local util = require("scripts/util")
+local tile = require("scripts/tile")
+local map = require("scripts/map")
+local dirs = require("scripts/dirs")
 
 local actor = {
+  map = nil,
+  items = nil,
+  actors = {},
+
   -- player classes
   ranger = {name="Ranger",
     base={maxhp=8, str=6, dex=6, ranged=10, maxmp=1},
@@ -75,6 +82,14 @@ local actor = {
     graphic=12, undead=true
   }
 }
+
+function actor.clear()
+  actor.actors = {}
+end
+
+function actor.add(a)
+  actor.actors[#actor.actors+1] = a
+end
 
 function actor:calculate_stats()
   local mul = self.level - 1
@@ -154,6 +169,86 @@ function actor:description()
   str = str .. "\nranged: " .. self.ranged
 
   return str
+end
+
+function actor:move(x, y)
+  local dx, dy = self.x+x, self.y+y
+
+  local t = actor.map:get_tile(dx, dy)
+
+  if t == tile.closeddoor then
+    actor.map:set_tile(dx, dy, tile.opendoor)
+    return
+  end
+
+  if tile.blocks(t) then
+    return false
+  end
+
+  for i, a in ipairs(actor.actors) do
+    if a ~= self and a.x == dx and a.y == dy then
+      return false
+    end
+  end
+
+  self.x = dx
+  self.y = dy
+
+  return true
+end
+
+function actor:navigate_to(tx, ty)
+  local pmap = map:new(actor.map.w, actor.map.h, 0)
+  for i = 0, actor.map.w*actor.map.h-1 do
+    if tile.blocks(actor.map.map[i]) and
+        actor.map.map[i] ~= tile.closeddoor then
+      pmap.map[i] = -1
+    end
+  end
+
+  for i, a in ipairs(actor.actors) do
+    pmap:set_tile(a.x, a.y, -1)
+  end
+  pmap:set_tile(self.x, self.y, 0)
+  pmap:set_tile(tx, ty, 1)
+
+  pmap:generate_heatmap(dirs.dirs8)
+  local t = pmap:get_tile(self.x, self.y)
+
+  for i, d in ipairs(dirs.dirs4) do
+    if pmap:get_tile(self.x+d.x, self.y+d.y) == t-1 then
+      self:move(d.x, d.y)
+      return
+    end
+  end
+  for i, d in ipairs(dirs.dirs8) do
+    if pmap:get_tile(self.x+d.x, self.y+d.y) == t-1 then
+      self:move(d.x, d.y)
+      return
+    end
+  end
+
+end
+
+function actor:follow_target()
+  if self.target.x and self.target.y then
+    self:navigate_to(self.target.x, self.target.y)
+    if self.x == self.target.x and self.y == self.target.y then
+      self.target = nil
+    end
+  end
+end
+
+function actor:update()
+  if self.target then
+    self:follow_target()
+  end
+end
+
+function actor.update_all()
+  for i, a in ipairs(actor.actors) do
+    a:update()
+  end
 end
 
 --local a = actor:new(actor.rogue, 1, true)

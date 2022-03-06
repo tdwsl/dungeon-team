@@ -68,7 +68,7 @@ function map:get_tile(x, y)
   return self.map[y*self.w+x]
 end
 
-function map:generate_heatmap()
+function map:generate_heatmap(drs)
   local stuck = false
   local i = 0
 
@@ -80,7 +80,7 @@ function map:generate_heatmap()
       if self.map[j] == i then
         stuck = false
 
-        for k, d in ipairs(dirs.dirs4) do
+        for k, d in ipairs(drs) do
           local x = j%self.w + d.x
           local y = math.floor(j/self.w) + d.y
           if self:get_tile(x, y) == 0 then
@@ -112,7 +112,7 @@ function map:addfov(mp, x, y, r)
   end
 end
 
-function map:clearvisible()
+function map:clear_visible()
   for i = 0, self.w*self.h-1 do
     if self.map[i] == tile.visible then
       self.map[i] = tile.known
@@ -194,7 +194,7 @@ function map:generate_dungeon(depth)
     end
 
     hmap:set_tile(rooms[ri].x, rooms[ri].y, 1)
-    hmap:generate_heatmap()
+    hmap:generate_heatmap(dirs.dirs4)
 
     local x, y = rooms[ri-1].x, rooms[ri-1].y
     local tt = hmap:get_tile(x, y)
@@ -354,7 +354,8 @@ function map:generate_overmap()
     end
   end
 
-  for i = self.w*math.floor(self.h*0.7)-1, math.floor(self.w*self.h/2), -1 do
+  for i = self.w*math.floor(self.h*0.7)-1,
+      math.floor(self.w*self.h/2), -1 do
     if self.map[i] == tile.grass then
       self.map[i] = tile.town
       break

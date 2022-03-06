@@ -26,15 +26,27 @@ local tile = {
 
 function tile.blocksvision(t)
   if t == tile.none then
-    return false
-  elseif t == tile.closeddoor then
-    return false
-  elseif t == tile.out then
-    return false
-  elseif t == tile.wall then
-    return false
-  else
     return true
+  elseif t == tile.closeddoor then
+    return true
+  elseif t == tile.out then
+    return true
+  elseif t == tile.wall then
+    return true
+  else
+    return false
+  end
+end
+
+function tile.blocks(t)
+  if t == tile.none or t == tile.out then
+    return true
+  elseif t == tile.closeddoor or t == tile.wall then
+    return true
+  elseif t == tile.water then
+    return true
+  else
+    return false
   end
 end
 

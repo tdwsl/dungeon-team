@@ -4,31 +4,36 @@ local map = require("scripts/map")
 local tile = require("scripts/tile")
 local actor = require("scripts/actor")
 
-local level = {
-  map = map:new(),
+local cursor = {x=0, y=0}
+
+local game = {
+  town1 = map:new(),
+  town2 = map:new(),
+  dungeon = map:new(),
+  overmap = map:new(),
   fov = map:new()
 }
 
-local cursor = {x=0, y=0}
-local actors = {actor:new(actor.rogue, 1, true, 0, 0), actor:new(actor.rogue, 1, true, 0, 0)}
+game.overmap:generate_overmap()
+game.dungeon:generate_dungeon(1)
 
---level.map:generate_dungeon(1)
-level.map:generate_overmap()
-level.fov:init(level.map.w, level.map.h, tile.visible)
+game.fov:init(game.dungeon.w, game.dungeon.h, tile.visible)
 
-function draw()
-  engine.draw_map(level.map, level.fov)
-  for i, a in ipairs(actors) do
-    engine.draw_actor(a)
+actor.map = game.dungeon
+
+for i = 0, actor.map.w*actor.map.h-1 do
+  if actor.map.map[i] == tile.upstairs or actor.map.map[i] == tile.town then
+    cursor = {x = i%actor.map.w, y = math.floor(i/actor.map.w)}
+    actor.add(actor:new(actor.rogue, 2, true, cursor.x, cursor.y))
+    actor.add(actor:new(actor.rogue, 2, true, cursor.x+1, cursor.y))
+    break
   end
 end
 
-for i = 0, level.map.w*level.map.h-1 do
-  if level.map.map[i] == tile.upstairs then
-    cursor = {x = i%level.map.w, y = math.floor(i/level.map.w)}
-    actors[1].x, actors[1].y = cursor.x, cursor.y
-    actors[2].x, actors[2].y = cursor.x+1, cursor.y
-    break
+function draw()
+  engine.draw_map(actor.map, game.fov)
+  for i, a in ipairs(actor.actors) do
+    engine.draw_actor(a)
   end
 end
 
@@ -46,6 +51,10 @@ while true do
     cursor.x = cursor.x - 1
   elseif c == engine.keys.right then
     cursor.x = cursor.x + 1
+  elseif c == engine.keys['return'] then
+    actor.actors[1].target = {x=cursor.x, y=cursor.y}
+  elseif c == engine.keys['.'] then
+    actor.update_all()
   elseif c == engine.keys['>'] then
     engine.ui.putstr('>')
   end
