@@ -92,28 +92,29 @@ function item:calculate_stats()
 
   self.type = self.base.type
   self.name = self.base.name
+  local mul = self.level-1
 
-  self.value = util.nzfloor(self.base.value * (1 + 0.2*self.level))
+  self.value = util.nzfloor(self.base.value * (1 + 0.2*mul))
 
   self.size = util.nzfloor(self.base.size +
-      self.base.mod.size * self.level)
+      self.base.mod.size * mul)
 
   if self.type == item.armor then
-    self.ac = util.nzfloor(self.base.ac + self.base.mod.ac * self.level)
+    self.ac = util.nzfloor(self.base.ac + self.base.mod.ac * mul)
     self.dex = util.nzfloor(self.base.dex +
-        self.base.mod.dex * self.level)
+        self.base.mod.dex * mul)
 
   elseif self.type == item.melee then
     self.sharp = util.nzfloor(self.base.sharp +
-        self.base.mod.sharp * self.level)
+        self.base.mod.sharp * mul)
     self.blunt = util.nzfloor(self.base.blunt +
-        self.base.mod.blunt * self.level)
+        self.base.mod.blunt * mul)
 
   elseif self.type == item.ranged then
     self.ranged = util.nzfloor(self.base.ranged +
-        self.base.mod.ranged * self.level)
+        self.base.mod.ranged * mul)
     self.speed = util.nzfloor(self.base.speed +
-        self.base.mod.speed * self.level)
+        self.base.mod.speed * mul)
 
   end
 end
@@ -135,7 +136,7 @@ function item:new(itm, lvl)
   return it
 end
 
-function item:stats_string()
+function item:description()
   local str = self.name
   if item.type_is_leveled(self.type) then
     str = str .. " (Level " .. self.level .. ")"
@@ -168,7 +169,7 @@ function item:stats_string()
   return str
 end
 
-local it = item:new(item.leather_armor, 3)
-print(it:stats_string())
+--local it = item:new(item.leather_armor, 3)
+--print(it:description())
 
 return item
