@@ -1,9 +1,17 @@
-#include <SDL2/SDL.h>
+/* engine.c - tdwsl 2022 */
+
 #include <lua5.4/lua.h>
 #include <lua5.4/lauxlib.h>
 #include <lua5.4/lualib.h>
 #include <stdbool.h>
+
+#ifndef DT_CURSES
+#include <SDL2/SDL.h>
 #include "sdl.h"
+#else
+#include <ncurses.h>
+#include "initCurses.h"
+#endif
 
 #define UI_W (WIDTH/4)
 #define UI_H (HEIGHT/6)
@@ -18,7 +26,22 @@ int getchdelay = -1;
 int fov[300*300];
 int mapW, mapH;
 
+#ifndef DT_CURSES
 SDL_Texture *tileset, *actorsheet, *charset, *cursortex;
+#else
+const char actorchars[] = {
+  '@','@','@','@', '@','?','?','?',
+  't','t','?','s', 'S','r','O','n',
+  '?','?','?','?', '?','?','?','?',
+  '?','?','?','?', '?','?','?','?',
+};
+const char mapchars[] = {
+  ',','^','~','o', '#','#','#','#',
+  '?','?','~','.', '+','/','c','c',
+  '>','<','-','?', '?','?','?','?',
+  '?','?','?','?', '?','?','?','?',
+};
+#endif
 
 int l_uigotoxy(lua_State *l) {
   int x = lua_tointeger(l, 1), y = lua_tointeger(l, 2);
@@ -78,35 +101,22 @@ int l_cursor(lua_State *l) {
   return 0;
 }
 
-int l_loadTileset(lua_State *l) {
-  tileset = loadTexture(lua_tostring(l, 1));
-  lua_pop(l, -1);
-
-  return 0;
-}
-
-int l_loadActorsheet(lua_State *l) {
-  actorsheet = loadTexture(lua_tostring(l, 1));
-  lua_pop(l, -1);
-
-  return 0;
-}
-
-int l_loadCharset(lua_State *l) {
-  charset = loadTexture(lua_tostring(l, 1));
-  lua_pop(l, -1);
-
-  return 0;
-}
-
 void drawUI() {
   for(int i = 0; i < UI_W*UI_H; i++) {
+#ifndef DT_CURSES
     SDL_Rect dst = {(i%UI_W)*4, (i/UI_W)*6, 4, 6};
     SDL_Rect src = {(uichars[i]%32)*4, (uichars[i]/32)*6, 4, 6};
     if(uicursoron && i == uicursorXY)
       src.y += 24;
-
     SDL_RenderCopy(renderer, charset, &src, &dst);
+#else
+    if(uicursoron && i == uicursorXY)
+      attron(A_STANDOUT);
+    if(!uichars[i])
+      continue;
+    mvaddch(i/UI_W, i%UI_W, uichars[i]);
+    attroff(A_STANDOUT);
+#endif
   }
 }
 
@@ -123,7 +133,12 @@ int l_drawMap(lua_State *l) {
   lua_pop(l, 2);
 
   /* get x and y offsets */
+#ifndef DT_CURSES
   int xo = -cursorX*8 + WIDTH/2, yo = -cursorY*8 + HEIGHT/2;
+#else
+  int xo = -cursorX + WIDTH/2, yo = -cursorY + HEIGHT/2;
+  attron(COLOR_PAIR(BLUE_BLACK));
+#endif
 
   lua_getfield(l, 1, "map"); /* map */
   lua_getfield(l, 2, "map"); /* fov */
@@ -140,6 +155,7 @@ int l_drawMap(lua_State *l) {
     if(t == 0)
       continue;
 
+#ifndef DT_CURSES
     if(visible == 2)
       SDL_SetTextureColorMod(tileset, 0xFF, 0xFF, 0xFF);
     else
@@ -157,7 +173,27 @@ int l_drawMap(lua_State *l) {
     SDL_Rect dst = {(i%w)*8+xo, (i/w)*8+yo, 8, 8};
 
     SDL_RenderCopy(renderer, tileset, &src, &dst);
+
+#else
+    char c = mapchars[t];
+
+    if(visible != 2) {
+      if(c == '.' || c == ',' || c == '-')
+        continue;
+      attron(A_DIM);
+    }
+    if(c == '.' || c == ',' || c == '-')
+      attron(A_DIM);
+
+    mvaddch(i/w+yo, i%w+xo, c);
+
+    attroff(A_DIM);
+#endif
   }
+
+#ifdef DT_CURSES
+  attroff(COLOR_PAIR(BLUE_BLACK));
+#endif
 
   lua_pop(l, -1);
 
@@ -176,6 +212,7 @@ int l_drawActor(lua_State *l) {
   if(fov[y*mapW+x] != 2)
     return 0;
 
+#ifndef DT_CURSES
   int xo = -cursorX*8 + WIDTH/2, yo = -cursorY*8 + HEIGHT/2;
 
   SDL_Rect src = {(t%8)*8, (t/8)*8, 8, 8};
@@ -183,13 +220,23 @@ int l_drawActor(lua_State *l) {
 
   SDL_RenderCopy(renderer, actorsheet, &src, &dst);
 
+#else
+  int xo = -cursorX + WIDTH/2, yo = -cursorY + HEIGHT/2;
+
+  mvaddch(y+yo, x+xo, actorchars[t]);
+#endif
+
   return 0;
 }
 
 void draw(lua_State *l) {
   mapDrawn = false;
+#ifndef DT_CURSES
   SDL_SetRenderDrawColor(renderer, 20, 20, 20, 0xff);
   SDL_RenderClear(renderer);
+#else
+  clear();
+#endif
 
   lua_getglobal(l, "draw");
   if(lua_isfunction(l, 1))
@@ -197,16 +244,25 @@ void draw(lua_State *l) {
   lua_pop(l, -1);
 
   /* draw cursor */
+#ifndef DT_CURSES
   if(mapDrawn) {
     SDL_Rect src = {0, 0, 8, 8};
     SDL_Rect dst = {WIDTH/2, HEIGHT/2, 8, 8};
     SDL_RenderCopy(renderer, cursortex, &src, &dst);
   }
+#endif
 
   drawUI();
+
+#ifndef DT_CURSES
   updateDisplay();
+#else
+  refresh();
+  move(HEIGHT/2, WIDTH/2);
+#endif
 }
 
+/* not yet implemented */
 int l_getchDelay(lua_State *l) {
   getchdelay = lua_tointeger(l, 1);
   lua_pop(l, -1);
@@ -216,6 +272,7 @@ int l_getchDelay(lua_State *l) {
 
 int l_getch(lua_State *l) {
   int c = -1;
+#ifndef DT_CURSES
   bool quit = false;
 
   SDL_StartTextInput();
@@ -242,6 +299,10 @@ int l_getch(lua_State *l) {
   if(quit) {
     luaL_error(l, "quit");
   }
+#else
+  draw(l);
+  c = getch();
+#endif
 
   lua_pushinteger(l, c);
 
@@ -277,17 +338,26 @@ void addLibrary(lua_State *l) {
     lua_setfield(l, 2, cs);
   }
 
+#ifndef DT_CURSES
   const int syms[] = {
     SDLK_UP, SDLK_DOWN,
     SDLK_LEFT, SDLK_RIGHT,
     SDLK_RETURN, SDLK_BACKSPACE,
-    SDLK_ESCAPE, SDLK_TAB,
+    SDLK_TAB,
   };
+#else
+  const int syms[] = {
+    KEY_UP, KEY_DOWN,
+    KEY_LEFT, KEY_RIGHT,
+    '\n', KEY_BACKSPACE,
+    KEY_STAB,
+  };
+#endif
   const char *strs[] = {
     "up", "down",
     "left", "right",
     "return", "backspace",
-    "escape", "tab",
+    "tab",
   };
 
   for(int i = 0; i < 8; i++) {
@@ -314,13 +384,16 @@ void addLibrary(lua_State *l) {
 }
 
 int main(int argc, char *argv[]) {
+#ifndef DT_CURSES
   initSDL();
-
   actorsheet = loadTexture("img/actor.bmp");
   tileset = loadTexture("img/tileset.bmp");
   charset = loadTexture("img/font.bmp");
   cursortex = loadTexture("img/cursor.bmp");
   SDL_SetTextureAlphaMod(cursortex, 0x88);
+#else
+  initCurses();
+#endif
 
   lua_State *l = luaL_newstate();
   luaL_openlibs(l);
@@ -329,7 +402,11 @@ int main(int argc, char *argv[]) {
   if(luaL_dofile(l, "scripts/main.lua"))
     printf("%s\n", lua_tostring(l, -1));
 
+#ifndef DT_CURSES
   endSDL();
+#else
+  endCurses();
+#endif
 
   return 0;
 }
