@@ -22,62 +22,62 @@ local item = {
 
   shortsword={type=melee, size=6, sharp=8, blunt=2,
     mod={size=0, sharp=0.5, blunt=0},
-    name="Shortsword", value=100
+    name="Shortsword", value=100, graphic=0
   },
   throwing_knives={type=melee, size=2, sharp=4, blunt=0,
     mod={size=-0.1, sharp=0.4, blunt=0},
-    name="Throwing Knives", value=25
+    name="Throwing Knives", value=25, grapic=1
   },
   dagger={type=melee, size=4, sharp=6, blunt=1,
     mod={size=0, sharp=0.4, blunt=0},
-    name="Dagger", value=75
+    name="Dagger", value=75, graphic=1
   },
   longsword={type=melee, size=8, sharp=12, blunt=3,
     mod={size=0, sharp=0.5, blunt=0.05},
-    name="Longsword", value=150,
+    name="Longsword", value=150, graphic=0
   },
   bow={type=ranged, size=8, ranged=6, speed=4, ammo="arrow",
     mod={size=0.1, ranged=0.6, speed=0.3},
-    name="Bow", value=150
+    name="Bow", value=150, graphic=2
   },
   arrow={type=ammo, size=2, sharp=3, blunt=0,
-    name="Arrow", value=8
+    name="Arrow", value=8, graphic=3
   },
   healing_potion={type=comestible, size=2,
     effect={hp=14, duration=1, str=0, mp=0, dex=0, ranged=0},
-    name="Healing Potion", value=50
+    name="Healing Potion", value=50, graphic=4
   },
   small_healing_potion={type=comestible, size=1,
     effect={hp=6, duration=1, str=0, mp=0, dex=0, ranged=0},
-    name="Healing Potion (small)", value=20
+    name="Healing Potion (small)", value=20, graphic=4
   },
   shield={type=armor, shield=true, size=3, ac=4, dex=-4,
     mod={size=0, ac=0.3, dex=0.1},
-    name="Shield", value=80
+    name="Shield", value=80, graphic=5
   },
   cloak={type=armor, shield=false, size=3, ac=1, dex=0,
     mod={size=0, ac=0.01, dex=0},
-    name="Cloak", value=15
+    name="Cloak", value=15, graphic=6
   },
   leather_armor={type=armor, shield=false, size=5, ac=6, dex=-1,
     mod={size=0, ac=0.4, dex=0.2},
-    name="Leather Armor", value=180
+    name="Leather Armor", value=180, graphic=7
   },
   chainmail={type=armor, shield=false, size=7, ac=9, dex=-3,
     mod={size=0, ac=0.5, dex=0.1},
-    name="Chainmail Armor", value=240
+    name="Chainmail Armor", value=240, graphic=7
   },
   basic_healing={type=spellbook, size=2,
     spells={spell.heal_small},
-    name="Book of Basic Healing", value=100
+    name="Book of Basic Healing", value=100, graphic=8
   },
   novice_spellcasting={type=spellbook, size=5,
     spells={spell.heal_small, spell.swap_small, spell.detect_magic},
-    name="Book of Novice Spellcasting", value=210
+    name="Book of Novice Spellcasting", value=210, graphic=8
   },
   basic_offensive_magic={type=spellbook, size=3,
     spells={spell.fireball_small, spell.electricity_small},
-    name="Book of Basic Offensive Magic", value=140
+    name="Book of Basic Offensive Magic", value=140, graphic=8
   }
 }
 
@@ -96,6 +96,7 @@ function item:calculate_stats()
 
   self.type = self.base.type
   self.name = self.base.name
+  self.graphic = self.base.graphic
   local mul = self.level-1
 
   self.value = util.nzfloor(self.base.value * (1 + 0.2*mul))

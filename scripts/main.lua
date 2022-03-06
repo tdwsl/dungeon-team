@@ -3,38 +3,27 @@
 local map = require("scripts/map")
 local tile = require("scripts/tile")
 local actor = require("scripts/actor")
+local level = require("scripts/level")
 
 local cursor = {x=0, y=0}
 
 local game = {
-  town1 = map:new(),
-  town2 = map:new(),
-  dungeon = map:new(),
-  overmap = map:new(),
-  fov = map:new()
+  town1 = level:new(0),
+  town2 = level:new(0),
+  dungeon = level:new(1),
+  overmap = level:new(-1)
 }
 
-game.overmap:generate_overmap()
-game.dungeon:generate_dungeon(1)
+local party = {
+  actor:new(actor.rogue, 2, true),
+  actor:new(actor.warrior, 2, true)
+}
 
-game.fov:init(game.dungeon.w, game.dungeon.h, tile.visible)
-
-actor.map = game.dungeon
-
-for i = 0, actor.map.w*actor.map.h-1 do
-  if actor.map.map[i] == tile.upstairs or actor.map.map[i] == tile.town then
-    cursor = {x = i%actor.map.w, y = math.floor(i/actor.map.w)}
-    actor.add(actor:new(actor.rogue, 2, true, cursor.x, cursor.y))
-    actor.add(actor:new(actor.rogue, 2, true, cursor.x+1, cursor.y))
-    break
-  end
-end
+game.dungeon:enter(party)
+game.dungeon.fov:init(game.dungeon.fov.w, game.dungeon.fov.h, tile.visible)
 
 function draw()
-  engine.draw_map(actor.map, game.fov)
-  for i, a in ipairs(actor.actors) do
-    engine.draw_actor(a)
-  end
+  game.dungeon:draw()
 end
 
 engine.ui.gotoxy(0, 0)

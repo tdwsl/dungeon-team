@@ -312,7 +312,7 @@ function map:expand(t, dtiles, n)
   end
 end
 
-function map:generate_overmap()
+function map:generate_overworld()
   self:init(40+math.random(15), 20+math.random(10), tile.water)
 
   for i = 1, 3 do
@@ -362,6 +362,9 @@ function map:generate_overmap()
     end
   end
 
+end
+
+function map:generate_town()
 end
 
 return map

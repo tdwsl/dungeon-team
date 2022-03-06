@@ -4,8 +4,8 @@
 extern SDL_Window *window;
 extern SDL_Renderer *renderer;
 
-#define WIDTH 160
-#define HEIGHT 120
+#define WIDTH 240
+#define HEIGHT 180
 
 void initSDL();
 void endSDL();

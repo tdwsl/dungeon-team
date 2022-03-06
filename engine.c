@@ -27,7 +27,7 @@ int fov[300*300];
 int mapW, mapH;
 
 #ifndef DT_CURSES
-SDL_Texture *tileset, *actorsheet, *charset, *cursortex;
+SDL_Texture *tileset, *actorsheet, *charset, *cursortex, *itemsheet;
 #else
 const char actorchars[] = {
   '@','@','@','@', '@','?','?','?',
@@ -39,6 +39,12 @@ const char mapchars[] = {
   ',','^','~','o', '#','#','#','#',
   'd','t','~','.', '+','/','c','c',
   '>','<','-','?', '?','?','?','?',
+  '?','?','?','?', '?','?','?','?',
+};
+const char itemchars[] = {
+  '/',';',')','/', '&','*','{','[',
+  '^','?','?','?', '?','?','?','?',
+  '?','?','?','?', '?','?','?','?',
   '?','?','?','?', '?','?','?','?',
 };
 #endif
@@ -239,6 +245,37 @@ int l_drawActor(lua_State *l) {
   return 0;
 }
 
+int l_drawItem(lua_State *l) {
+  lua_getfield(l, 1, "x");
+  lua_getfield(l, 1, "y");
+  lua_getfield(l, 1, "graphic");
+  int x = lua_tointeger(l, 2);
+  int y = lua_tointeger(l, 3);
+  int t = lua_tointeger(l, 4);
+  lua_pop(l, -1);
+
+  if(fov[y*mapW+x] != 2)
+    return 0;
+
+#ifndef DT_CURSES
+  int xo = -cursorX*8 + WIDTH/2, yo = -cursorY*8 + HEIGHT/2;
+
+  SDL_Rect src = {(t%8)*8, (t/8)*8, 8, 8};
+  SDL_Rect dst = {x*8+xo, y*8+yo, 8, 8};
+
+  SDL_RenderCopy(renderer, itemsheet, &src, &dst);
+
+#else
+  int xo = -cursorX + WIDTH/2, yo = -cursorY + HEIGHT/2;
+
+  attron(COLOR_PAIR(RED_BLACK));
+  mvaddch(y+yo, x+xo, itemchars[t]);
+  attroff(COLOR_PAIR(RED_BLACK));
+#endif
+
+  return 0;
+}
+
 void draw(lua_State *l) {
   mapDrawn = false;
 #ifndef DT_CURSES
@@ -381,6 +418,8 @@ void addLibrary(lua_State *l) {
   lua_setfield(l, 1, "draw_map");
   lua_pushcfunction(l, l_drawActor);
   lua_setfield(l, 1, "draw_actor");
+  lua_pushcfunction(l, l_drawItem);
+  lua_setfield(l, 1, "draw_item");
 
   lua_pushcfunction(l, l_getch);
   lua_setfield(l, 1, "getch");
@@ -400,6 +439,7 @@ int main(int argc, char *argv[]) {
   tileset = loadTexture("img/tileset.bmp");
   charset = loadTexture("img/font.bmp");
   cursortex = loadTexture("img/cursor.bmp");
+  itemsheet = loadTexture("img/item.bmp");
   SDL_SetTextureAlphaMod(cursortex, 0x88);
 #else
   initCurses();
