@@ -8,13 +8,14 @@
 #ifndef DT_CURSES
 #include <SDL2/SDL.h>
 #include "sdl.h"
+#define UI_W (WIDTH/4)
+#define UI_H (HEIGHT/6)
 #else
 #include <ncurses.h>
 #include "initCurses.h"
+#define UI_W WIDTH
+#define UI_H HEIGHT
 #endif
-
-#define UI_W (WIDTH/4)
-#define UI_H (HEIGHT/6)
 
 int uicursorXY=0;
 char uichars[UI_W*UI_H] = {0};
@@ -58,19 +59,34 @@ int l_uigotoxy(lua_State *l) {
 }
 
 void uiputch(char c) {
+  if(c == '\t') {
+    int w = (uicursorXY%UI_W)%4;
+    for(int i = 0; i < 4-w; i++)
+      uiputch(' ');
+    return;
+  }
+
   uichars[uicursorXY] = c;
   if(uicursorXY < UI_W*UI_H-1)
     uicursorXY++;
 }
 
 int l_uiputch(lua_State *l) {
-  uiputch(lua_tointeger(l, -1));
+  int c = lua_tointeger(l, -1);
   lua_pop(l, -1);
+
+  uiputch(c);
 
   return 0;
 }
 
 int l_uiputstr(lua_State *l) {
+  if(!lua_isstring) {
+    lua_pop(l, -1);
+    luaL_error(l, "string required");
+    return 0;
+  }
+
   for(const char *c = lua_tostring(l, -1); *c; c++)
     uiputch(*c);
   lua_pop(l, -1);

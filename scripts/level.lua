@@ -193,4 +193,37 @@ function level:draw()
   end
 end
 
+function level:tile_description(x, y)
+  local t = self.map:get_tile(x, y)
+  if self.fov:get_tile(x, y) == tile.unknown then
+    t = tile.none
+  end
+  local lines = {tile.description(t)}
+
+  local a = self:actor_at(x, y)
+  if a then
+    lines[#lines+1] = a.name .. "(Level " .. a.level .. ")"
+  end
+
+  local itemdesc = {}
+  for i, it in ipairs(self.items) do
+    if it.x == x and it.y == y then
+      local istr = it.name
+      if item.type_is_leveled(it.type) then
+        istr = istr .. " (Level " .. it.level .. ")"
+      end
+      itemdesc[#itemdesc+1] = istr
+    end
+  end
+
+  if #itemdesc > 0 then
+    lines[#lines+1] = "Items here:"
+    for i, d in ipairs(itemdesc) do
+      lines[#lines+1] = d
+    end
+  end
+
+  return lines
+end
+
 return level

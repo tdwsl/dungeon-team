@@ -108,6 +108,7 @@ function actor:new(type, level, ally, x, y)
   a.spelltypes = type.spelltypes
   a.graphic = type.graphic
   a.undead = type.undead
+  a.name = type.name
   a.friendly = type.friendly
   a.inventory = {}
   for i, t in ipairs(type.inv) do
@@ -240,6 +241,11 @@ function actor:follow_target()
 end
 
 function actor:update()
+  if self.updated then
+    self.updated = false
+    return
+  end
+
   if self.target then
     self:follow_target()
   end

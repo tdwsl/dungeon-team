@@ -50,4 +50,36 @@ function tile.blocks(t)
   end
 end
 
+function tile.description(t)
+  if t == tile.grass then
+    return "grass"
+  elseif t == tile.water then
+    return "water"
+  elseif t == tile.closeddoor then
+    return "door (closed)"
+  elseif t == tile.opendoor then
+    return "door (open)"
+  elseif t == tile.wall then
+    return "wall"
+  elseif t == tile.floor then
+    return "floor"
+  elseif t == tile.path then
+    return "path"
+  elseif t == tile.upstairs then
+    return "stairs (up)"
+  elseif t == tile.downstairs then
+    return "stairs (down)"
+  elseif t == tile.tree then
+    return "forest"
+  elseif t == tile.mountain then
+    return "mountain"
+  elseif t == tile.town then
+    return "town"
+  elseif t == tile.dungeon then
+    return "dungeon"
+  else
+    return "unknown tile"
+  end
+end
+
 return tile
