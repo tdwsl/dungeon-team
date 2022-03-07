@@ -138,6 +138,8 @@ function level:enter(party)
     end
   end
 
+  self:update_fov()
+
   actor.actors = self.actors
   actor.map = self.map
 end
@@ -171,14 +173,14 @@ function level:generate()
 end
 
 function level:forget()
-  if not l.remembered then
+  if not self.remembered then
     return
   end
 
-  l.fov = nil
-  l.items = {}
-  l.actors = {}
-  l.remembered = false
+  self.fov = nil
+  self.items = {}
+  self.actors = {}
+  self.remembered = false
 end
 
 function level:draw()
@@ -195,24 +197,25 @@ end
 
 function level:tile_description(x, y)
   local t = self.map:get_tile(x, y)
-  if self.fov:get_tile(x, y) == tile.unknown then
+  local f = self.fov:get_tile(x, y)
+  if f == tile.unknown then
     t = tile.none
   end
   local lines = {tile.description(t)}
 
+  if f ~= tile.visible then
+    return lines
+  end
+
   local a = self:actor_at(x, y)
   if a then
-    lines[#lines+1] = a.name .. "(Level " .. a.level .. ")"
+    lines[#lines+1] = a:brief_description()
   end
 
   local itemdesc = {}
   for i, it in ipairs(self.items) do
     if it.x == x and it.y == y then
-      local istr = it.name
-      if item.type_is_leveled(it.type) then
-        istr = istr .. " (Level " .. it.level .. ")"
-      end
-      itemdesc[#itemdesc+1] = istr
+      itemdesc[#itemdesc+1] = it:brief_description()
     end
   end
 
@@ -224,6 +227,22 @@ function level:tile_description(x, y)
   end
 
   return lines
+end
+
+function level:update_fov()
+  self.fov:clear_visible()
+  for i, a in ipairs(self.actors) do
+    if a.ally then
+      self.fov:reveal_fov(self.map, a.x, a.y, 5)
+    end
+  end
+end
+
+function level:update()
+  for i, a in ipairs(self.actors) do
+    a:update()
+  end
+  self:update_fov()
 end
 
 return level

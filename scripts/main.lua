@@ -22,7 +22,6 @@ local selected = party[1]
 game.current_level = game.dungeon
 
 game.dungeon:enter(party)
-game.dungeon.fov:init(game.dungeon.fov.w, game.dungeon.fov.h, tile.visible)
 
 function draw()
   game.current_level:draw()
@@ -113,9 +112,13 @@ function control()
 
   if c == engine.keys.x then
     local cursor = {x=selected.x, y=selected.y}
+    local w, h = engine.ui.wh()
 
     while true do
       engine.ui.clear()
+      local coords = "[" .. cursor.x .. "," .. cursor.y .. "]"
+      engine.ui.gotoxy(w-#coords, 0)
+      engine.ui.putstr(coords)
       local desc = game.current_level:tile_description(cursor.x, cursor.y)
       for i, d in ipairs(desc) do
         engine.ui.gotoxy(0, i-1)
@@ -142,6 +145,6 @@ end
 
 while true do
   if control() then
-    actor.update_all()
+    game.current_level:update()
   end
 end

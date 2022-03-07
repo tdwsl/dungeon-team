@@ -152,7 +152,7 @@ function actor:new(type, level, ally, x, y)
   return a
 end
 
-function actor:description()
+function actor:brief_description()
   local str = self.name .. " (Level " .. self.level .. ")"
   if self.friendly then
     str = str .. " (friendly)"
@@ -163,6 +163,13 @@ function actor:description()
   if self.undead then
     str = str .. " (undead)"
   end
+
+  return str
+end
+
+function actor:description()
+  local str = self:brief_description()
+
   str = str .. "\nHP: " .. self.hp .. "/" .. self.maxhp
   str = str .. "\nMP: " .. self.mp .. "/" .. self.maxmp
   str = str .. "\nDEX: " .. self.dex

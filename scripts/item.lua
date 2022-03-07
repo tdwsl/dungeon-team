@@ -141,11 +141,18 @@ function item:new(itm, lvl)
   return it
 end
 
-function item:description()
+function item:brief_description()
   local str = self.name
   if item.type_is_leveled(self.type) then
     str = str .. " (Level " .. self.level .. ")"
   end
+
+  return str
+end
+
+function item:description()
+  local str = item:brief_description()
+
   str = str .. "\n"
   str = str .. "weight: " .. self.size .. "\n"
 

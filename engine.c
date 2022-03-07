@@ -351,7 +351,18 @@ int l_getch(lua_State *l) {
         c = *ev.text.text;
         break;
       case SDL_KEYDOWN:
-        c = ev.key.keysym.sym;
+        switch(ev.key.keysym.sym) {
+          case SDLK_LSHIFT:
+          case SDLK_RSHIFT:
+          case SDLK_LCTRL:
+          case SDLK_RCTRL:
+          case SDLK_LALT:
+          case SDLK_RALT:
+            break;
+          default:
+            c = ev.key.keysym.sym;
+            break;
+        }
         break;
       }
 

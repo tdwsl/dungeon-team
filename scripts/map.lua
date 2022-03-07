@@ -95,7 +95,7 @@ function map:generate_heatmap(drs)
 
 end
 
-function map:addfov(mp, x, y, r)
+function map:reveal_fov(mp, x, y, r)
   local a = 0
   while a <= math.pi*2 do
     a = a + 0.1
