@@ -238,6 +238,10 @@ function actor:description()
 end
 
 function actor:move(x, y)
+  if self.hp <= 0 then
+    return
+  end
+
   local dx, dy = self.x+x, self.y+y
 
   local t = actor.map:get_tile(dx, dy)
@@ -257,23 +261,21 @@ function actor:move(x, y)
         a:hit(self:calculate_melee())
       elseif a.ally and not self.ally and not a.friendly then
         a:hit(self:calculate_melee())
-      elseif (a.ally and self.friendly)
-          or (self.ally and a.friendly)
-          or (self.ally and a.ally) then
-        if self.target ~= a then
-          local x = a.x
-          local y = a.y
-          a.x = self.x
-          a.y = self.y
-          self.x = x
-          self.y = y
-        end
-      else
-        -- hit enemy
-        --log.log(self.name .. " hits " .. a.name)
+      elseif self:is_enemy(a) then
         a:hit(self:calculate_melee())
+      elseif self.target ~= a then
+        if self.target ~= nil and self.target == a.target then
+          return false
+        end
+
+        local x = a.x
+        local y = a.y
+        a.x = self.x
+        a.y = self.y
+        self.x = x
+        self.y = y
       end
-      return false
+      return true
     end
   end
 
@@ -363,7 +365,7 @@ function actor:calculate_ac()
     end
   end
 
-  ac = util.nzfloor(ac/2)
+  ac = util.nzfloor(ac/5)
 
   return ac
 end
@@ -383,6 +385,7 @@ function actor:hit(damage)
 
   if self.hp <= 0 then
     self.graphic = 31
+    self.target = nil
     log.log(self.name .. " dies!")
   else
     log.log(self.name .. " takes " .. hp .. " damage")
@@ -401,12 +404,53 @@ function actor:update()
 
   if self.target then
     self:follow_target()
+  else
+    for i, a in ipairs(actor.actors) do
+      if self:is_enemy(a) and a.hp > 0 then
+        if self:can_see(a.x, a.y, 5) then
+          self.target = a
+          break
+        end
+      end
+    end
   end
 end
 
 function actor.update_all()
   for i, a in ipairs(actor.actors) do
     a:update()
+  end
+end
+
+function actor:can_see(x, y, r)
+  if not r then
+    r = 6
+  end
+
+  local a = math.atan2(y-self.y, x-self.x)
+  local sina, cosa = math.sin(a), math.cos(a)
+
+  for m = 0, r, 0.5 do
+    local tx = math.floor(self.x+0.5+cosa*m)
+    local ty = math.floor(self.y+0.5+sina*m)
+
+    if x == tx and y == ty then
+      return true
+    end
+
+    if tile.blocks(actor.map:get_tile(tx, ty)) then
+      break
+    end
+  end
+
+  return false
+end
+
+function actor:is_enemy(a)
+  if a.friendly or a.ally then
+    return (not (self.friendly or self.ally))
+  else
+    return (self.friendly or self.ally)
   end
 end
 

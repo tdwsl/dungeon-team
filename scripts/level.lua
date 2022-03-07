@@ -251,7 +251,7 @@ end
 function level:update_fov()
   self.fov:clear_visible()
   for i, a in ipairs(self.actors) do
-    if a.ally then
+    if a.ally and a.hp > 0 then
       self.fov:reveal_fov(self.map, a.x, a.y, 5)
     end
   end
@@ -262,6 +262,17 @@ function level:update()
     a:update()
   end
   self:update_fov()
+
+  -- check for dead party members
+  local i = 1
+  while i <= #self.party do
+    if self.party[i].hp <= 0 then
+      self.party[i] = self.party[#self.party]
+      self.party[#self.party] = nil
+      i = i - 1
+    end
+    i = i + 1
+  end
 end
 
 return level

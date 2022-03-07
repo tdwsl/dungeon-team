@@ -109,7 +109,8 @@ function control()
       elseif c == engine.keys['.'] then
         -- set target
         local a = game.current_level:actor_at(cursor.x, cursor.y)
-        if a ~= nil and a ~= selected then
+        if a ~= nil and a ~= selected and
+            game.current_level.fov:get_tile(a.x, a.y) == tile.visible then
           selected.target = a
         else
           selected.target = {x=cursor.x, y=cursor.y}
@@ -157,6 +158,9 @@ function control()
 
   -- wait/continue
   if c == engine.keys['.'] then
+    if selected.target == nil then
+      selected.updated = true
+    end
     return true
   end
 
@@ -218,9 +222,27 @@ function control()
 
 end
 
+function gameover()
+  engine.ui.clear()
+  local text = "Game over!"
+  local w, h = engine.ui.wh()
+  engine.ui.gotoxy(math.floor(w/2-#text/2), math.floor(h/2)-3)
+  engine.ui.putstr(text)
+
+  while true do
+    local c = engine.getch()
+  end
+end
+
 while true do
   log.update()
   if control() then
     game.current_level:update()
+    if selected.hp <= 0 then
+      selected = party[1]
+      if selected == nil then
+        gameover()
+      end
+    end
   end
 end

@@ -1,8 +1,8 @@
 #ifndef INITCURSES_H
 #define INITCURSES_H
 
-#define WIDTH 80
-#define HEIGHT 24
+#define WIDTH 79
+#define HEIGHT 23
 
 #define BLUE_BLACK 1
 #define RED_BLACK 2
