@@ -227,9 +227,10 @@ function level:tile_description(x, y)
     return lines
   end
 
-  local a = self:actor_at(x, y)
-  if a then
-    lines[#lines+1] = a:brief_description()
+  for i, a in ipairs(self.actors) do
+    if x == a.x and y == a.y then
+      lines[#lines+1] = a:brief_description()
+    end
   end
 
   local itemdesc = {}
