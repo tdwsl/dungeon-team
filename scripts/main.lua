@@ -5,6 +5,8 @@ local tile = require("scripts/tile")
 local actor = require("scripts/actor")
 local level = require("scripts/level")
 local util = require("scripts/util")
+local dirs = require("scripts/dirs")
+local log = require("scripts/log")
 
 local game = {
   town1 = level:new(0),
@@ -27,7 +29,7 @@ function draw()
   game.current_level:draw()
 end
 
-function drawPartyInfo()
+function draw_partyinfo()
   for i, a in ipairs(party) do
     engine.ui.gotoxy(0, i-1)
     if a == selected then
@@ -40,7 +42,11 @@ function drawPartyInfo()
 
     if a.target then
       if a.target.x and a.target.y then
-        engine.ui.putstr("(targeting [" .. a.target.x .. "," ..
+        engine.ui.putstr("(targeting ")
+        if a.target.name then
+          engine.ui.putstr(a.target.name .. " at ")
+        end
+        engine.ui.putstr("[" .. a.target.x .. "," ..
             a.target.y .. "])")
       end
     else
@@ -49,17 +55,19 @@ function drawPartyInfo()
   end
 end
 
-function drawUI()
+function draw_ui()
   engine.ui.clear()
-  drawPartyInfo()
+  draw_partyinfo()
+  log.draw()
 end
 
 function control()
-  drawUI()
+  draw_ui()
   engine.cursor(selected.x, selected.y)
 
   local c = engine.getch()
 
+  -- movement
   local mov = util.control_movement(c)
   if mov.x ~= 0 or mov.y ~= 0 then
     selected:move(mov.x, mov.y)
@@ -67,10 +75,11 @@ function control()
     return true
   end
 
+  -- change / switch control
   if c == engine.keys.c then
     local w, h = engine.ui.wh()
     engine.ui.clear()
-    drawPartyInfo()
+    draw_partyinfo()
     engine.ui.gotoxy(0, h-1)
     engine.ui.putstr("Press 1-" .. #party .. ", any other key to cancel")
     c = engine.getch()
@@ -83,6 +92,7 @@ function control()
     return false
   end
 
+  -- target
   if c == engine.keys.t then
     engine.ui.clear()
     engine.ui.gotoxy(0, 0)
@@ -97,7 +107,13 @@ function control()
         cursor.y = cursor.y + mov.y
         util.limit_cursor(cursor, actor.map.w, actor.map.h)
       elseif c == engine.keys['.'] then
-        selected.target = {x=cursor.x, y=cursor.y}
+        -- set target
+        local a = game.current_level:actor_at(cursor.x, cursor.y)
+        if a ~= nil and a ~= selected then
+          selected.target = a
+        else
+          selected.target = {x=cursor.x, y=cursor.y}
+        end
         break
       else
         selected.target = nil
@@ -106,10 +122,11 @@ function control()
       engine.cursor(cursor.x, cursor.y)
     end
 
-    drawUI()
+    draw_ui()
     return false
   end
 
+  -- look/examine
   if c == engine.keys.x then
     local cursor = {x=selected.x, y=selected.y}
     local w, h = engine.ui.wh()
@@ -138,12 +155,71 @@ function control()
     return false
   end
 
+  -- wait/continue
   if c == engine.keys['.'] then
     return true
   end
+
+  -- close door
+  if c == engine.keys.C then
+    local dn = 0
+    local ld
+    for i, d in ipairs(dirs.dirs8) do
+      if actor.map:get_tile(selected.x+d.x, selected.y+d.y) ==
+          tile.opendoor then
+        dn = dn + 1
+        ld = d
+      end
+    end
+
+    if dn == 0 then
+      log.log("No open doors")
+      return false
+    end
+
+    if dn == 1 then
+      local x, y = selected.x+ld.x, selected.y+ld.y
+      if game.current_level:actor_at(x, y) or
+          #game.current_level:items_at(x, y) > 0 then
+        log.log("The door is blocked")
+        return false
+      end
+      actor.map:set_tile(x, y, tile.closeddoor)
+      return true
+    end
+
+    engine.ui.clear()
+    engine.ui.gotoxy(0, 0)
+    engine.ui.putstr("Choose a door to close")
+
+    c = engine.getch()
+    local mov = util.control_movement(c)
+
+    if mov.x == 0 and mov.y == 0 then
+      log.log("Nevermind")
+      return false
+    end
+
+    local x, y = selected.x+mov.x, selected.y+mov.y
+
+    if actor.map:get_tile(x, y) == tile.opendoor then
+      if game.current_level:actor_at(x, y) or
+          #game.current_level:items_at(x, y) > 0 then
+        log.log("The door is blocked")
+        return false
+      end
+      actor.map:set_tile(x, y, tile.closeddoor)
+      return true
+    else
+      log.log("There is no door there")
+      return false
+    end
+  end
+
 end
 
 while true do
+  log.update()
   if control() then
     game.current_level:update()
   end

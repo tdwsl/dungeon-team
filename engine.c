@@ -4,6 +4,7 @@
 #include <lua5.4/lauxlib.h>
 #include <lua5.4/lualib.h>
 #include <stdbool.h>
+#include <time.h>
 
 #ifndef DT_CURSES
 #include <SDL2/SDL.h>
@@ -23,7 +24,6 @@ bool uicursoron = false;
 bool mapDrawn;
 int cursorX=0;
 int cursorY=0;
-int getchdelay = -1;
 int fov[300*300];
 int mapW, mapH;
 
@@ -34,11 +34,11 @@ const char actorchars[] = {
   '@','@','@','@', '@','?','?','?',
   't','t','?','s', 'S','r','O','n',
   '?','?','?','?', '?','?','?','?',
-  '?','?','?','?', '?','?','?','?',
+  '?','?','?','?', '?','?','?','%',
 };
 const char mapchars[] = {
   ',','^','~','o', '#','#','#','#',
-  'd','t','~','.', '+','/','c','c',
+  'd','t','~','.', '+','\'','c','c',
   '>','<','-','?', '?','?','?','?',
   '?','?','?','?', '?','?','?','?',
 };
@@ -202,7 +202,7 @@ int l_drawMap(lua_State *l) {
 
     if(c=='>'||c=='<'||c=='#'||c=='.'||c=='~')
       attrset(COLOR_PAIR(BLUE_BLACK));
-    else if(c == '-' || c == '+' || c == '/')
+    else if(c == '-' || c == '+' || c == '\'')
       attrset(COLOR_PAIR(RED_BLACK));
     else if(c == ',')
       attrset(COLOR_PAIR(GREEN_BLACK));
@@ -325,10 +325,18 @@ void draw(lua_State *l) {
 #endif
 }
 
-/* not yet implemented */
-int l_getchDelay(lua_State *l) {
-  getchdelay = lua_tointeger(l, 1);
+int l_delay(lua_State *l) {
+  int delay = lua_tonumber(l, 1);
   lua_pop(l, -1);
+
+  clock_t start = clock();
+
+  while(true) {
+    draw(l);
+    clock_t currentTime = clock();
+    if(currentTime-start > delay)
+      break;
+  }
 
   return 0;
 }
@@ -450,8 +458,8 @@ void addLibrary(lua_State *l) {
 
   lua_pushcfunction(l, l_getch);
   lua_setfield(l, 1, "getch");
-  lua_pushcfunction(l, l_getchDelay);
-  lua_setfield(l, 1, "getch_delay");
+  lua_pushcfunction(l, l_delay);
+  lua_setfield(l, 1, "delay");
 
   lua_pushcfunction(l, l_cursor);
   lua_setfield(l, 1, "cursor");

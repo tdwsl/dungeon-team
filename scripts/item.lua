@@ -32,7 +32,7 @@ local item = {
     mod={size=0, sharp=0.4, blunt=0},
     name="Dagger", value=75, graphic=1
   },
-  longsword={type=melee, size=8, sharp=12, blunt=3,
+  longsword={type=melee, size=8, sharp=12, blunt=3, twohands=true,
     mod={size=0, sharp=0.5, blunt=0.05},
     name="Longsword", value=150, graphic=0
   },
@@ -97,6 +97,7 @@ function item:calculate_stats()
   self.type = self.base.type
   self.name = self.base.name
   self.graphic = self.base.graphic
+  self.twohands = self.base.twohands
   local mul = self.level-1
 
   self.value = util.nzfloor(self.base.value * (1 + 0.2*mul))

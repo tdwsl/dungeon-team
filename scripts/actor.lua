@@ -6,6 +6,7 @@ local util = require("scripts/util")
 local tile = require("scripts/tile")
 local map = require("scripts/map")
 local dirs = require("scripts/dirs")
+local log = require("scripts/log")
 
 local actor = {
   map = nil,
@@ -99,10 +100,62 @@ function actor:calculate_stats()
   self.dex = util.nzfloor(self.base.dex * (1 + self.mod.dex*mul))
   self.ranged = util.nzfloor(self.base.ranged * (1 + self.mod.ranged*mul))
   self.maxmp = util.nzfloor(self.base.maxmp * (1 + self.mod.maxmp*mul))
+
+  self.capacity = self.str*2 + util.nzfloor(self.dex/2)
+end
+
+function actor:equip(itm)
+  local hands = 2
+  local armor = false
+  local shield = false
+
+  for i, it in ipairs(self.equipped) do
+    if it.type == item.melee then
+      if it.twohands then
+        hands = hands - 2
+      else
+        hands = hands - 1
+      end
+    elseif it.type == item.armor then
+      if it.shield then
+        hands = hands - 1
+      else
+        armor = true
+      end
+    elseif it.type == item.ranged then
+      hands = hands - 1
+    end
+  end
+
+  if itm.type == item.armor then
+    if itm.shield and hands < 1 then
+      return false
+    elseif armor then
+      return false
+    end
+  elseif itm.type == item.ranged then
+    if hands < 2 then
+      return false
+    end
+  elseif itm.type == item.melee then
+    if itm.twohands and hands < 2 then
+      return false
+    elseif hands < 1 then
+      return false
+    end
+  else
+    return false
+  end
+
+  self.equipped[#self.equipped] = itm
+  return true
 end
 
 function actor:new(type, level, ally, x, y)
   local a = {}
+  setmetatable(a, self)
+  self.__index = self
+
   a.base = type.base
   a.mod = type.mod
   a.spelltypes = type.spelltypes
@@ -121,8 +174,11 @@ function actor:new(type, level, ally, x, y)
     a.spells[#a.spells+1] = s
   end
 
-  setmetatable(a, self)
-  self.__index = self
+  -- equip any equippable items
+  a.equipped = {}
+  for i, it in ipairs(a.inventory) do
+    a:equip(it)
+  end
 
   if a.graphic == 8 then
     if math.random(10) > 7 then
@@ -160,8 +216,10 @@ function actor:brief_description()
   if self.ally then
     str = str .. " (ally)"
   end
-  if self.undead then
+  if self.undead and self.hp > 0 then
     str = str .. " (undead)"
+  elseif self.hp < 0 then
+    str = str .. " (dead)"
   end
 
   return str
@@ -194,7 +252,27 @@ function actor:move(x, y)
   end
 
   for i, a in ipairs(actor.actors) do
-    if a ~= self and a.x == dx and a.y == dy then
+    if a ~= self and a.x == dx and a.y == dy and a.hp > 0 then
+      if self.ally and not a.ally and not a.friendly then
+        a:hit(self:calculate_melee())
+      elseif a.ally and not self.ally and not a.friendly then
+        a:hit(self:calculate_melee())
+      elseif (a.ally and self.friendly)
+          or (self.ally and a.friendly)
+          or (self.ally and a.ally) then
+        if self.target ~= a then
+          local x = a.x
+          local y = a.y
+          a.x = self.x
+          a.y = self.y
+          self.x = x
+          self.y = y
+        end
+      else
+        -- hit enemy
+        --log.log(self.name .. " hits " .. a.name)
+        a:hit(self:calculate_melee())
+      end
       return false
     end
   end
@@ -215,7 +293,9 @@ function actor:navigate_to(tx, ty)
   end
 
   for i, a in ipairs(actor.actors) do
-    pmap:set_tile(a.x, a.y, -1)
+    if (a.ally or a.friendly) and a.hp > 0 then
+      pmap:set_tile(a.x, a.y, -1)
+    end
   end
   pmap:set_tile(self.x, self.y, 0)
   pmap:set_tile(tx, ty, 1)
@@ -247,7 +327,73 @@ function actor:follow_target()
   end
 end
 
+function actor:calculate_dex()
+  local dex = self.dex;
+  for i, it in ipairs(self.equipped) do
+    if it.dex then
+      dex = dex + it.dex
+    end
+  end
+  return dex
+end
+
+function actor:calculate_melee()
+  local blunt = util.nzfloor(self.str/2)
+  local sharp = 0
+
+  local dex = self:calculate_dex()
+  local str = self.str
+
+  for i, it in ipairs(self.equipped) do
+    if it.type == item.melee then
+      sharp = sharp + it.sharp*util.nzfloor((dex/2) * (3/it.size))
+      blunt = blunt + it.blunt*util.nzfloor((str/2) * (it.size/5))
+    end
+  end
+
+  return {sharp=sharp, blunt=blunt}
+end
+
+function actor:calculate_ac()
+  local ac = self.str
+
+  for i, it in ipairs(self.equipped) do
+    if it.ac then
+      ac = ac + it.ac
+    end
+  end
+
+  ac = util.nzfloor(ac/2)
+
+  return ac
+end
+
+function actor:hit(damage)
+  local ac = self:calculate_ac()
+  ac = ac - util.nzfloor(damage.sharp/2)
+  ac = ac - util.nzfloor(damage.blunt)
+  local hp
+  if ac < 0 then
+    hp = -ac
+    self.hp = self.hp + ac
+  else
+    hp = 1
+    self.hp = self.hp - 1
+  end
+
+  if self.hp <= 0 then
+    self.graphic = 31
+    log.log(self.name .. " dies!")
+  else
+    log.log(self.name .. " takes " .. hp .. " damage")
+  end
+end
+
 function actor:update()
+  if self.hp <= 0 then
+    return
+  end
+
   if self.updated then
     self.updated = false
     return

@@ -186,13 +186,32 @@ end
 function level:draw()
   engine.draw_map(self.map, self.fov)
 
+  for i, a in ipairs(self.actors) do
+    if a.hp <= 0 then
+      engine.draw_actor(a)
+    end
+  end
+
   for i, it in ipairs(self.items) do
     engine.draw_item(it)
   end
 
   for i, a in ipairs(self.actors) do
-    engine.draw_actor(a)
+    if a.hp > 0 then
+      engine.draw_actor(a)
+    end
   end
+end
+
+function level:items_at(x, y)
+  local items = {}
+  for i, it in ipairs(self.items) do
+    if it.x == x and it.y == y then
+      items[#items+1] = it
+    end
+  end
+
+  return items
 end
 
 function level:tile_description(x, y)

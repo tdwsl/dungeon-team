@@ -12,7 +12,7 @@ function map:init(w, h, t)
   if t == nil then
     t = tile.none
   end
-  for i = 0, w*h-1 do
+  for i = 0, self.w*self.h-1 do
     self.map[i] = t
   end
 end
@@ -22,7 +22,7 @@ function map:new(w, h, t)
   setmetatable(m, self)
   self.__index = self
   if w ~= nil and h ~= nil then
-    self:init(w, h, t)
+    m:init(w, h, t)
   end
   return m
 end
