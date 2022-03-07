@@ -31,14 +31,18 @@ end
 
 function draw_partyinfo()
   for i, a in ipairs(party) do
-    engine.ui.gotoxy(0, i-1)
+    engine.ui.gotoxy(0, (i-1)*2)
     if a == selected then
       engine.ui.putstr(i .. "+ ")
     else
       engine.ui.putstr(i .. "- ")
     end
 
-    engine.ui.putstr(a.name .. "\t")
+    engine.ui.putstr(a.name)
+
+    engine.ui.gotoxy(3, (i-1)*2+1)
+
+    engine.ui.putstr("(" .. a.hp .. "/" .. a.maxhp .. ")\t")
 
     if a.target then
       if a.target.x and a.target.y then
@@ -86,6 +90,7 @@ function control()
     for i, a in ipairs(party) do
       if c == engine.keys["" .. i] then
         selected = a
+        selected.target = nil
         return false
       end
     end
@@ -106,7 +111,7 @@ function control()
         cursor.x = cursor.x + mov.x
         cursor.y = cursor.y + mov.y
         util.limit_cursor(cursor, actor.map.w, actor.map.h)
-      elseif c == engine.keys['.'] then
+      elseif c == engine.keys['.'] or c == engine.keys['5'] then
         -- set target
         local a = game.current_level:actor_at(cursor.x, cursor.y)
         if a ~= nil and a ~= selected and
@@ -157,7 +162,7 @@ function control()
   end
 
   -- wait/continue
-  if c == engine.keys['.'] then
+  if c == engine.keys['.'] or c == engine.keys['5'] then
     if selected.target == nil then
       selected.updated = true
     end

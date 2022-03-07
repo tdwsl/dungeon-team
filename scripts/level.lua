@@ -142,6 +142,7 @@ function level:enter(party)
 
   actor.actors = self.actors
   actor.map = self.map
+  actor.items = self.items
 end
 
 function level:new(depth)

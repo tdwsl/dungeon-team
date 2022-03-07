@@ -258,11 +258,11 @@ function actor:move(x, y)
   for i, a in ipairs(actor.actors) do
     if a ~= self and a.x == dx and a.y == dy and a.hp > 0 then
       if self.ally and not a.ally and not a.friendly then
-        a:hit(self:calculate_melee())
+        self:hit_actor(a)
       elseif a.ally and not self.ally and not a.friendly then
-        a:hit(self:calculate_melee())
+        self:hit_actor(a)
       elseif self:is_enemy(a) then
-        a:hit(self:calculate_melee())
+        self:hit_actor(a)
       elseif self.target ~= a then
         if self.target ~= nil and self.target == a.target then
           return false
@@ -282,6 +282,21 @@ function actor:move(x, y)
   self.x = dx
   self.y = dy
 
+  local inum = 0
+  local li
+  for i, it in ipairs(actor.items) do
+    if it.x == self.x and it.y == self.y then
+      inum = inum + 1
+      li = it
+    end
+  end
+
+  if inum == 1 then
+    log.log("Here you see: " .. li:brief_description())
+  elseif inum > 0 then
+    log.log("You see multiple items here")
+  end
+
   return true
 end
 
@@ -295,7 +310,7 @@ function actor:navigate_to(tx, ty)
   end
 
   for i, a in ipairs(actor.actors) do
-    if (a.ally or a.friendly) and a.hp > 0 then
+    if (a.ally or a.friendly) and a.hp > 0 and a.target == self.target then
       pmap:set_tile(a.x, a.y, -1)
     end
   end
@@ -325,6 +340,10 @@ function actor:follow_target()
     self:navigate_to(self.target.x, self.target.y)
     if self.x == self.target.x and self.y == self.target.y then
       self.target = nil
+    elseif self.target.hp then
+      if self.target.hp <= 0 then
+        self.target = nil
+      end
     end
   end
 end
@@ -368,6 +387,27 @@ function actor:calculate_ac()
   ac = util.nzfloor(ac/5)
 
   return ac
+end
+
+function actor:hit_actor(a)
+  local melee = self:calculate_melee()
+  local ac = a:calculate_ac()
+  damage = melee.sharp - math.floor(ac*0.8)
+  damage = damage + melee.blunt - math.floor(ac*0.5)
+
+  if damage <= 0 then
+    log.log(self.name .. " misses " .. a.name)
+  else
+    damage = math.random(damage)-1
+    a.hp = a.hp - damage
+    local str = self.name .. " hits " .. a.name
+    if a.hp <= 0 then
+      log.log(str .. " - " .. a.name .. " is dead")
+      a.graphic = 31
+    else
+      log.log(str .. " - " .. damage .. " damage")
+    end
+  end
 end
 
 function actor:hit(damage)
@@ -416,12 +456,6 @@ function actor:update()
   end
 end
 
-function actor.update_all()
-  for i, a in ipairs(actor.actors) do
-    a:update()
-  end
-end
-
 function actor:can_see(x, y, r)
   if not r then
     r = 6
@@ -429,6 +463,8 @@ function actor:can_see(x, y, r)
 
   local a = math.atan2(y-self.y, x-self.x)
   local sina, cosa = math.sin(a), math.cos(a)
+
+  local fail = 0
 
   for m = 0, r, 0.5 do
     local tx = math.floor(self.x+0.5+cosa*m)
@@ -439,7 +475,10 @@ function actor:can_see(x, y, r)
     end
 
     if tile.blocks(actor.map:get_tile(tx, ty)) then
-      break
+      fail = fail + 1
+      if fail > 2 then
+        break
+      end
     end
   end
 
