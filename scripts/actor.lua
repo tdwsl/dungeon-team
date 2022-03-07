@@ -102,6 +102,8 @@ function actor:calculate_stats()
   self.maxmp = util.nzfloor(self.base.maxmp * (1 + self.mod.maxmp*mul))
 
   self.capacity = self.str*2 + util.nzfloor(self.dex/2)
+
+  self.maxxp = self.level*10 + math.floor((self.maxhp+self.maxmp+self.dex+self.ranged)*0.2)
 end
 
 function actor:equip(itm)
@@ -151,6 +153,15 @@ function actor:equip(itm)
   return true
 end
 
+function actor:level_up()
+  local hpmul = self.hp / self.maxhp
+  self.xp = self.xp - self.maxxp
+  self.level = self.level + 1
+  self:calculate_stats()
+  self.hp = math.ceil(self.hp * hpmul)
+  log.log(self.name .. " gained a level")
+end
+
 function actor:new(type, level, ally, x, y)
   local a = {}
   setmetatable(a, self)
@@ -164,6 +175,7 @@ function actor:new(type, level, ally, x, y)
   a.name = type.name
   a.friendly = type.friendly
   a.inventory = {}
+  a.xp = 0
   for i, t in ipairs(type.inv) do
     for j = 1, t[1] do
       a.inventory[#a.inventory+1] = item:new(t[2], level)
@@ -389,6 +401,13 @@ function actor:calculate_ac()
   return ac
 end
 
+function actor:add_xp(xp)
+  self.xp = self.xp + xp
+  if self.xp >= self.maxxp then
+    self:level_up()
+  end
+end
+
 function actor:hit_actor(a)
   local melee = self:calculate_melee()
   local ac = a:calculate_ac()
@@ -400,41 +419,37 @@ function actor:hit_actor(a)
   else
     damage = math.random(damage)-1
     a.hp = a.hp - damage
+
     local str = self.name .. " hits " .. a.name
     if a.hp <= 0 then
       log.log(str .. " - " .. a.name .. " is dead")
       a.graphic = 31
+      self:add_xp(math.floor(a.maxxp/2))
     else
       log.log(str .. " - " .. damage .. " damage")
     end
-  end
-end
 
-function actor:hit(damage)
-  local ac = self:calculate_ac()
-  ac = ac - util.nzfloor(damage.sharp/2)
-  ac = ac - util.nzfloor(damage.blunt)
-  local hp
-  if ac < 0 then
-    hp = -ac
-    self.hp = self.hp + ac
-  else
-    hp = 1
-    self.hp = self.hp - 1
-  end
+    self:add_xp(1)
 
-  if self.hp <= 0 then
-    self.graphic = 31
-    self.target = nil
-    log.log(self.name .. " dies!")
-  else
-    log.log(self.name .. " takes " .. hp .. " damage")
+    if self.hp/self.maxhp < a.hp/a.maxhp then
+      self:add_xp(2)
+    end
   end
 end
 
 function actor:update()
   if self.hp <= 0 then
     return
+  elseif self.hp < self.maxhp then
+    if not self.regen_cooldown then
+      self.hp = self.hp + 1
+      self.regen_cooldown = 5
+    elseif self.regen_cooldown <= 0 then
+      self.hp = self.hp + 1
+      self.regen_cooldown = 5
+    else
+      self.regen_cooldown = self.regen_cooldown - 1
+    end
   end
 
   if self.updated then
