@@ -57,6 +57,7 @@ function level:freexy()
 end
 
 function level:scatter_actors(type, lvl, num)
+  lvl = lvl + math.random(2)
   for i = 1, num do
     local a = actor:new(type, lvl)
     a.x, a.y = self:freexy()
@@ -64,11 +65,15 @@ function level:scatter_actors(type, lvl, num)
   end
 end
 
-function level:scatter_items(type, lvl, num)
+function level:scatter_items(type, lvl, ss, num)
   for i = 1, num do
-    local it = item:new(type, lvl)
-    it.x, it.y = self:freexy()
-    self.items[#self.items+1] = it
+    local x, y = self:freexy()
+    for j = 1, ss do
+      local it = item:new(type, lvl)
+      it.x = x
+      it.y = y
+      self.items[#self.items+1] = it
+    end
   end
 end
 
@@ -92,9 +97,9 @@ function level:init()
       actor.scatter(actor.skeleton, self.depth, 5 + math.random(4))
     end
     -- items
-    self:scatter_items(item.longsword, self.depth, math.random(self.depth+1)-1)
-    self:scatter_items(item.shortsword, self.depth, math.random(self.depth+1)-1)
-    self:scatter_items(item.arrow, self.depth, math.random(4*self.depth+1)-1)
+    self:scatter_items(item.longsword, self.depth, 1, math.random(self.depth+1)-1)
+    self:scatter_items(item.shortsword, self.depth, 1, math.random(self.depth+1)-1)
+    self:scatter_items(item.arrow, self.depth, 4, math.random(4*self.depth+1)-1)
   end
 
   self.remembered = true
@@ -233,12 +238,14 @@ function level:tile_description(x, y)
     end
   end
 
-  local itemdesc = {}
+  local items = {}
   for i, it in ipairs(self.items) do
     if it.x == x and it.y == y then
-      itemdesc[#itemdesc+1] = it:brief_description()
+      items[#items+1] = it
     end
   end
+
+  local itemdesc = item.string_list(item.item_list(items))
 
   if #itemdesc > 0 then
     lines[#lines+1] = "Items here:"

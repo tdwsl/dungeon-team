@@ -62,4 +62,124 @@ function util.limit_cursor(cursor, w, h)
   if cursor.y >= h then cursor.y = h-1 end
 end
 
+function util.choose(options)
+  local choice = 1
+  local w, h = engine.ui.wh()
+  local tw = 0
+  for i, o in ipairs(options) do
+    if #o > tw then
+      tw = #o
+    end
+  end
+  local bw, bh = tw + 6, #options + 2
+  local bx, by = math.floor(w/2-bw/2), math.floor(h/2-bh/2)
+
+  for y = by, by+bh-1 do
+    engine.ui.gotoxy(bx, y)
+    for x = bx, bx+bw-1 do
+      engine.ui.putstr(' ')
+    end
+  end
+
+  for i, o in ipairs(options) do
+    engine.ui.gotoxy(bx+2, by+i)
+    engine.ui.putch(engine.keys.a+i-1)
+    engine.ui.putstr(") " .. o)
+  end
+
+  -- begin selection
+  while true do
+    for i, o in ipairs(options) do
+      engine.ui.gotoxy(bx+1, by+i)
+      if choice == i then
+        engine.ui.putstr("*")
+      else
+        engine.ui.putstr("-")
+      end
+    end
+
+   local c = engine.getch()
+
+    local mov = util.control_movement(c)
+    if mov.y ~= 0 and mov.x == 0 then
+      choice = choice + mov.y
+      if choice < 1 then choice = 1 end
+      if choice > #options then choice = #options end
+    end
+
+    if c == engine.keys['.'] or c == engine.keys['return'] then
+      return choice
+    end
+
+    for i, o in ipairs(options) do
+      if c == engine.keys.a+i-1 then
+        choice = i
+        return choice
+      end
+    end
+  end
+end
+
+function util.amount(max)
+  local prompt = "How many? 0-" .. max
+  local max_digits = 5
+
+  local w, h = engine.ui.wh()
+  local x = math.floor(w/2 - #prompt/2)
+  local y = math.floor(h/2 - 2)
+
+  engine.ui.gotoxy(x, y)
+  engine.ui.putstr(prompt)
+
+  for j = 1, 2 do
+    engine.ui.gotoxy(x, y+j)
+    for i = 1, #prompt do
+      engine.ui.putstr(' ')
+    end
+  end
+
+  engine.ui.gotoxy(x, y+2)
+  engine.ui.putstr(':')
+
+  local digits = {}
+
+  while true do
+    engine.ui.gotoxy(x+1, y+2)
+    for i = 1, max_digits do
+      if digits[i] then
+        engine.ui.putch(digits[i])
+      else
+        engine.ui.putstr(' ')
+      end
+    end
+
+    local c = engine.getch()
+
+    if c == engine.keys['return'] then break end
+
+    if c >= engine.keys['0'] and c <= engine.keys['9'] then
+      if #digits < max_digits then
+        digits[#digits+1] = c
+      end
+    elseif c == engine.keys.backspace then
+      if #digits > 0 then
+        digits[#digits] = nil
+      end
+    end
+  end
+
+  if #digits == 0 then return 0 end
+
+  local num = 0
+  for i, d in ipairs(digits) do
+    num = num*10 + d-engine.keys['0']
+  end
+
+  if num > max then
+    return max
+  else
+    return num
+  end
+end
+
 return util

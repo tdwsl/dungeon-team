@@ -322,6 +322,10 @@ void draw(lua_State *l) {
 #else
   refresh();
   move(HEIGHT/2, WIDTH/2);
+  if(uichars[(HEIGHT/2)*UI_W+(WIDTH/2)])
+    curs_set(0);
+  else
+    curs_set(1);
 #endif
 }
 

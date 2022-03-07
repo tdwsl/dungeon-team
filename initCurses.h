@@ -17,6 +17,6 @@
   init_pair(3, COLOR_GREEN, COLOR_BLACK);\
   init_pair(4, COLOR_YELLOW, COLOR_BLACK);\
 }
-#define endCurses() {keypad(stdscr, 0); echo(); endwin();}
+#define endCurses() {curs_set(1); keypad(stdscr, 0); echo(); endwin();}
 
 #endif

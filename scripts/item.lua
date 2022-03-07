@@ -40,7 +40,7 @@ local item = {
     mod={size=0.1, ranged=0.6, speed=0.3},
     name="Bow", value=150, graphic=2
   },
-  arrow={type=ammo, size=2, sharp=3, blunt=0,
+  arrow={type=ammo, size=1, sharp=3, blunt=0,
     name="Arrow", value=8, graphic=3
   },
   healing_potion={type=comestible, size=2,
@@ -125,19 +125,29 @@ function item:calculate_stats()
   end
 end
 
-function item:new(itm, lvl)
+function item:new(itm, lvl, x, y)
   local it = {}
+  setmetatable(it, self)
+  self.__index = self
+
   if item.type_is_leveled(itm.type) then
     it.level = lvl
     it.base = itm
-    setmetatable(it, self)
-    self.__index = self
     it:calculate_stats()
   else
-    it = itm
-    setmetatable(it, self)
-    self.__index = self
+    it.base = itm
+    it.type = itm.type
+    it.spells = itm.spells
+    it.value = itm.value
+    it.size = itm.size
+    it.effect = itm.effect
+    it.graphic = itm.graphic
+    it.name = itm.name
+    it.level = 1
   end
+
+  it.x = x
+  it.y = y
 
   return it
 end
@@ -180,6 +190,40 @@ function item:description()
   str = str .. "value: $" .. self.value
 
   return str
+end
+
+function item.item_list(iitems)
+  local items = {}
+
+  for i, it in ipairs(iitems) do
+    local nu = true
+    for j, tm in ipairs(items) do
+      if tm.item.base == it.base and tm.item.level == it.level then
+        nu = false
+        tm.num = tm.num + 1
+        break
+      end
+    end
+
+    if nu then
+      items[#items+1] = {item=it, num=1}
+    end
+  end
+
+  return items
+end
+
+function item.string_list(items)
+  local strs = {}
+
+  for i, it in ipairs(items) do
+    strs[i] = it.item:brief_description()
+    if it.num > 1 then
+      strs[i] = strs[i] .. " (x" .. it.num .. ")"
+    end
+  end
+
+  return strs
 end
 
 --local it = item:new(item.leather_armor, 3)

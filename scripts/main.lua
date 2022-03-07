@@ -7,6 +7,7 @@ local level = require("scripts/level")
 local util = require("scripts/util")
 local dirs = require("scripts/dirs")
 local log = require("scripts/log")
+local item = require("scripts/item")
 
 local game = {
   town1 = level:new(0),
@@ -16,8 +17,8 @@ local game = {
 }
 
 local party = {
-  actor:new(actor.rogue, 2, true),
-  actor:new(actor.warrior, 2, true)
+  actor:new(actor.rogue, 1, true),
+  actor:new(actor.warrior, 1, true)
 }
 
 local selected = party[1]
@@ -68,15 +69,29 @@ end
 function control()
   draw_ui()
   engine.cursor(selected.x, selected.y)
+  selected.updated = true
 
   local c = engine.getch()
 
   -- movement
   local mov = util.control_movement(c)
   if mov.x ~= 0 or mov.y ~= 0 then
-    selected:move(mov.x, mov.y)
-    selected.updated = true
-    return true
+    if(selected:move(mov.x, mov.y)) then
+      -- see items on floor
+      local items = game.current_level:items_at(selected.x, selected.y)
+      items = item.item_list(items)
+      items = item.string_list(items)
+      if #items == 1 then
+        log.log("Here you see: " .. items[1])
+      elseif #items > 0 then
+        log.log("You see multiple items here")
+      end
+
+      selected.updated = true
+      return true
+    else
+      return false
+    end
   end
 
   -- change / switch control
@@ -163,9 +178,6 @@ function control()
 
   -- wait/continue
   if c == engine.keys['.'] or c == engine.keys['5'] then
-    if selected.target == nil then
-      selected.updated = true
-    end
     return true
   end
 
@@ -225,6 +237,165 @@ function control()
     end
   end
 
+  -- pick up
+  if c == engine.keys[','] or c == engine.keys['g'] then
+    local items = game.current_level:items_at(selected.x, selected.y)
+    items = item.item_list(items)
+
+    if #items == 0 then
+      log.log("Nothing to pick up")
+      return false
+    end
+
+    if #items == 1 then
+      if items[1].num == 1 then
+        return selected:pick_up(items[1].item)
+      else
+        local num = util.amount(items[1].num)
+        if num == 0 then
+          log.log("Nevermind")
+        else
+          return selected:pick_up_amount(items[1].item, num)
+        end
+      end
+    end
+
+    -- choose between multiple
+
+    engine.ui.clear()
+    engine.ui.gotoxy(0, 0)
+    engine.ui.putstr("Choose an item to pick up")
+
+    local options = item.string_list(items)
+    options[#options+1] = "Cancel"
+
+    local choice = util.choose(options)
+
+    if choice > #items then
+      log.log("Nevermind")
+      return false
+    end
+
+    if items[choice].num == 1 then
+      return selected:pick_up(items[choice].item)
+    else
+      local num = util.amount(items[choice].num)
+      if num == 0 then
+        log.log("Nevermind")
+      else
+        return selected:pick_up_amount(items[choice].item, num)
+      end
+    end
+
+  end
+
+  -- show inventory / stats
+  if c == engine.keys.i then
+    selected:stats_screen()
+    return false
+  end
+
+  -- drop items
+  if c == engine.keys.d then
+    local items = item.item_list(selected.inventory)
+
+    local options = item.string_list(items)
+    options[#options+1] = "Cancel"
+
+    engine.ui.clear()
+    engine.ui.gotoxy(0, 0)
+    engine.ui.putstr("Choose an item to drop")
+
+    local choice = util.choose(options)
+
+    if choice > #items then
+      log.log("Nevermind")
+      return false
+    end
+
+    if items[choice].num == 1 then
+      selected:drop(items[choice].item)
+      return true
+    else
+      local num = util.amount(items[choice].num)
+      if num == 0 then
+        log.log("Nevermind")
+        return false
+      end
+
+      for i = 1, num do
+        selected:drop(items[choice].item)
+      end
+      return true
+    end
+  end
+
+  -- wield/equip
+  if c == engine.keys.w then
+    engine.ui.clear()
+    engine.ui.gotoxy(0, 0)
+    engine.ui.putstr("Choose an item to equip")
+
+    local items = {}
+    for i, it in ipairs(selected.inventory) do
+      if it.type == it.armor or it.type == it.melee or it.type == it.ranged then
+        local already = false
+        for j, e in ipairs(selected.equipped) do
+          if it.base == e.base and it.level == e.level then
+            already = true
+            break
+          end
+        end
+        if not already then
+          items[#items+1] = it
+        end
+      end
+    end
+    items = item.item_list(items)
+
+    local options = item.string_list(items)
+    options[#options+1] = "Cancel"
+
+    local choice = util.choose(options)
+
+    if choice > #items then
+      log.log("Nevermind")
+      return false
+    end
+
+    if selected:equip(items[choice].item) then
+      return true
+    else
+      log.log("Can't equip " .. options[choice] .. " - try unequipping items")
+      return false
+    end
+  end
+
+  -- unequip
+  if c == engine.keys.W then
+    engine.ui.clear()
+    engine.ui.gotoxy(0, 0)
+    engine.ui.putstr("Choose an item to unequip")
+
+    local options = {}
+    for i, it in ipairs(selected.equipped) do
+      options[i] = it:brief_description()
+    end
+    options[#options+1] = "Cancel"
+
+    local choice = util.choose(options)
+
+    if choice > #selected.equipped then
+      log.log("Nevermind")
+      return false
+    end
+
+    selected.equipped[choice] = selected.equipped[#selected.equipped]
+    selected.equipped[#selected.equipped] = nil
+    return true
+  end
+
+  return false
 end
 
 function gameover()

@@ -67,7 +67,7 @@ local actor = {
 
   -- enemies
   slime = {name="Slime",
-    base={maxhp=3, str=2, dex=0, ranged=0, maxmp=1},
+    base={maxhp=3, str=5, dex=0, ranged=0, maxmp=1},
     mod={maxhp=0.4, str=0.4, dex=0, ranged=0, maxmp=0.3},
     inv={},
     spelltypes={healing=0.3, offensive=0},
@@ -75,7 +75,7 @@ local actor = {
     graphic=11
   },
   skeleton = {name="Skeleton",
-    base={maxhp=6, str=4, dex=5, ranged=0, maxmp=0},
+    base={maxhp=6, str=10, dex=5, ranged=0, maxmp=0},
     mod={maxhp=0.3, str=0.2, dex=0.4, ranged=0, maxmp=0},
     inv={},
     spelltypes={healing=0, offensive=0},
@@ -101,12 +101,12 @@ function actor:calculate_stats()
   self.ranged = util.nzfloor(self.base.ranged * (1 + self.mod.ranged*mul))
   self.maxmp = util.nzfloor(self.base.maxmp * (1 + self.mod.maxmp*mul))
 
-  self.capacity = self.str*2 + util.nzfloor(self.dex/2)
+  self.capacity = 20 + self.str*3 + self.dex
 
   self.maxxp = self.level*10 + math.floor((self.maxhp+self.maxmp+self.dex+self.ranged)*0.2)
 end
 
-function actor:equip(itm)
+function actor:free_slots()
   local hands = 2
   local armor = false
   local shield = false
@@ -121,6 +121,7 @@ function actor:equip(itm)
     elseif it.type == item.armor then
       if it.shield then
         hands = hands - 1
+        shield = true
       else
         armor = true
       end
@@ -129,27 +130,33 @@ function actor:equip(itm)
     end
   end
 
+  return {hands=hands, armor=armor, shield=shield}
+end
+
+function actor:equip(itm)
+  local slots = self:free_slots()
+
   if itm.type == item.armor then
-    if itm.shield and hands < 1 then
+    if itm.shield and (slots.hands < 1 or slots.shield) then
       return false
-    elseif armor then
+    elseif slots.armor then
       return false
     end
   elseif itm.type == item.ranged then
-    if hands < 2 then
+    if slots.hands < 2 then
       return false
     end
   elseif itm.type == item.melee then
-    if itm.twohands and hands < 2 then
+    if itm.twohands and slots.hands < 2 then
       return false
-    elseif hands < 1 then
+    elseif slots.hands < 1 then
       return false
     end
   else
     return false
   end
 
-  self.equipped[#self.equipped] = itm
+  self.equipped[#self.equipped+1] = itm
   return true
 end
 
@@ -238,20 +245,22 @@ function actor:brief_description()
 end
 
 function actor:description()
-  local str = self:brief_description()
+  local lines = {
+    self:brief_description(),
+    "HP: " .. self.hp .. "/" .. self.maxhp,
+    "MP: " .. self.mp .. "/" .. self.maxmp,
+    "DEX: " .. self.dex,
+    "strength: " .. self.str,
+    "ranged: " .. self.ranged,
+    "XP: " .. self.xp .. "/" .. self.maxxp
+  }
 
-  str = str .. "\nHP: " .. self.hp .. "/" .. self.maxhp
-  str = str .. "\nMP: " .. self.mp .. "/" .. self.maxmp
-  str = str .. "\nDEX: " .. self.dex
-  str = str .. "\nstrength: " .. self.str
-  str = str .. "\nranged: " .. self.ranged
-
-  return str
+  return lines
 end
 
 function actor:move(x, y)
   if self.hp <= 0 then
-    return
+    return false
   end
 
   local dx, dy = self.x+x, self.y+y
@@ -260,7 +269,7 @@ function actor:move(x, y)
 
   if t == tile.closeddoor then
     actor.map:set_tile(dx, dy, tile.opendoor)
-    return
+    return true
   end
 
   if tile.blocks(t) then
@@ -271,12 +280,15 @@ function actor:move(x, y)
     if a ~= self and a.x == dx and a.y == dy and a.hp > 0 then
       if self.ally and not a.ally and not a.friendly then
         self:hit_actor(a)
+        return true
       elseif a.ally and not self.ally and not a.friendly then
         self:hit_actor(a)
+        return true
       elseif self:is_enemy(a) then
         self:hit_actor(a)
+        return true
       elseif self.target ~= a then
-        if self.target ~= nil and self.target == a.target then
+        if self.target ~= nil then
           return false
         end
 
@@ -293,21 +305,6 @@ function actor:move(x, y)
 
   self.x = dx
   self.y = dy
-
-  local inum = 0
-  local li
-  for i, it in ipairs(actor.items) do
-    if it.x == self.x and it.y == self.y then
-      inum = inum + 1
-      li = it
-    end
-  end
-
-  if inum == 1 then
-    log.log("Here you see: " .. li:brief_description())
-  elseif inum > 0 then
-    log.log("You see multiple items here")
-  end
 
   return true
 end
@@ -379,8 +376,8 @@ function actor:calculate_melee()
 
   for i, it in ipairs(self.equipped) do
     if it.type == item.melee then
-      sharp = sharp + it.sharp*util.nzfloor((dex/2) * (3/it.size))
-      blunt = blunt + it.blunt*util.nzfloor((str/2) * (it.size/5))
+      sharp = sharp + it.sharp*util.nzfloor((dex/2) * (3/it.size) * 0.5)
+      blunt = blunt + it.blunt*util.nzfloor((str/2) * (it.size/5) * 0.5)
     end
   end
 
@@ -388,7 +385,7 @@ function actor:calculate_melee()
 end
 
 function actor:calculate_ac()
-  local ac = self.str
+  local ac = math.floor(self.str/2)
 
   for i, it in ipairs(self.equipped) do
     if it.ac then
@@ -411,13 +408,18 @@ end
 function actor:hit_actor(a)
   local melee = self:calculate_melee()
   local ac = a:calculate_ac()
-  damage = melee.sharp - math.floor(ac*0.8)
-  damage = damage + melee.blunt - math.floor(ac*0.5)
+
+  melee.blunt = melee.blunt - math.floor(ac*0.1)
+  if melee.blunt < 0 then melee.blunt = 0 end
+  melee.sharp = melee.sharp - math.floor(ac*0.25)
+  if melee.sharp < 0 then melee.sharp = 0 end
+
+  local damage = math.floor((melee.blunt + melee.sharp) / 2)
 
   if damage <= 0 then
     log.log(self.name .. " misses " .. a.name)
   else
-    damage = math.random(damage)-1
+    damage = math.random(damage)
     a.hp = a.hp - damage
 
     local str = self.name .. " hits " .. a.name
@@ -508,7 +510,105 @@ function actor:is_enemy(a)
   end
 end
 
---local a = actor:new(actor.rogue, 1, true)
---print(a:description())
+function actor:pick_up(itm)
+  local used = 0
+  for i, it in ipairs(self.inventory) do
+    used = used + it.size
+  end
+
+  if used + itm.size > self.capacity then
+    log.log(self.name .. " cannot pick up " .. itm.name)
+    return false
+
+  else
+    for i, it in ipairs(actor.items) do
+      if it.x == itm.x and it.y == itm.y and
+          it.base == itm.base and it.level == itm.level then
+        actor.items[i] = actor.items[#actor.items]
+        actor.items[#actor.items] = nil
+        break
+      end
+    end
+
+    self.inventory[#self.inventory+1] = itm
+
+    log.log(self.name .. " took " .. itm.name)
+    return true
+  end
+
+end
+
+function actor:drop(itm)
+  for i, it in ipairs(self.inventory) do
+    if it.base == itm.base and it.level == itm.level then
+      it.x = self.x
+      it.y = self.y
+      actor.items[#actor.items+1] = it
+
+      self.inventory[i] = self.inventory[#self.inventory]
+      self.inventory[#self.inventory] = nil
+
+      for j, tm in ipairs(self.equipped) do
+        if tm.base == it.base and tm.level == it.level then
+          self.equipped[j] = self.equipped[#self.equipped]
+          self.equipped[#self.equipped] = nil
+          break
+        end
+      end
+
+      return
+    end
+  end
+end
+
+function actor:stats_screen()
+  engine.ui.clear()
+  local w, h = engine.ui.wh()
+
+  local desc = self:description()
+  for i, d in ipairs(desc) do
+    engine.ui.gotoxy(1, i)
+    engine.ui.putstr(d)
+  end
+
+  local x = math.floor(w/2)+1
+  engine.ui.gotoxy(x, 1)
+  engine.ui.putstr("Inventory:")
+
+  local items = item.item_list(self.inventory)
+  local sitems = item.string_list(items)
+
+  for i, it in ipairs(items) do
+    engine.ui.gotoxy(x-2, i+1)
+    local equipped = false
+    for j, tm in ipairs(self.equipped) do
+      if it.item.base == tm.base and it.item.level == tm.level then
+        equipped = true
+        break
+      end
+    end
+    if equipped then
+      engine.ui.putstr("* ")
+    else
+      engine.ui.putstr("  ")
+    end
+    engine.ui.putstr(sitems[i])
+  end
+
+  engine.ui.gotoxy(1, h-1)
+  engine.ui.putstr("(Press any key)")
+
+  engine.getch()
+end
+
+function actor:pick_up_amount(itm, num)
+  for i = 1, num do
+    if not self:pick_up(itm) then
+      if i == 1 then return false end
+      break
+    end
+  end
+  return true
+end
 
 return actor
