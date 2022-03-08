@@ -478,7 +478,7 @@ function gameover()
   engine.ui.clear()
   local text = "Game over!"
   local w, h = engine.ui.wh()
-  engine.ui.gotoxy(math.floor(w/2-#text/2), math.floor(h/2)-3)
+  engine.ui.gotoxy(math.floor(w/2-#text/2), math.floor(h/2))
   engine.ui.putstr(text)
 
   while true do

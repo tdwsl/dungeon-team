@@ -446,7 +446,7 @@ void addLibrary(lua_State *l) {
     "tab",
   };
 
-  for(int i = 0; i < 8; i++) {
+  for(int i = 0; i < 7; i++) {
     lua_pushinteger(l, syms[i]);
     lua_setfield(l, 2, strs[i]);
   }
