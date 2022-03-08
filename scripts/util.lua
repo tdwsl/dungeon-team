@@ -23,12 +23,10 @@ function util.nzfloor(n)
 end
 
 function util.floor_effect(effect)
-  effect.hp = nzfloor(effect.hp)
-  effect.str = nzfloor(effect.str)
-  effect.mp = nzfloor(effect.mp)
-  effect.dex = nzfloor(effect.dex)
-
-  return effect
+  effect.hp = util.nzfloor(effect.hp)
+  effect.str = util.nzfloor(effect.str)
+  effect.mp = util.nzfloor(effect.mp)
+  effect.dex = util.nzfloor(effect.dex)
 end
 
 function util.control_movement(c)

@@ -42,7 +42,7 @@ function spell.cast(spel, caster, castee)
 
   if spel.special then
     if caster.level < spel.level then
-      spell.log[#spell.log+1] = "Nothing happens!"
+      log.log("Nothing happens!")
     else
       spel.fun(caster, castee)
     end
@@ -56,7 +56,7 @@ function spell.cast(spel, caster, castee)
     elseif spel.type == spell.offensive then
       effect = util.mul_effect(effect, caster.spelltype.offensive)
     end
-    effect = util.floor_effect(effect)
+    util.floor_effect(effect)
 
     castee:add_effect(effect)
   end

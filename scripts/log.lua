@@ -25,7 +25,7 @@ end
 function log.draw()
   local w, h = engine.ui.wh()
   for i, l in ipairs(log.logs) do
-    engine.ui.gotoxy(0, h-1-#log.logs+i)
+    engine.ui.gotoxy(0, h-#log.logs+i-1)
     engine.ui.putstr(l.log)
   end
 end

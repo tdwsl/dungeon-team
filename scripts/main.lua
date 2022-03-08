@@ -199,6 +199,8 @@ function control()
   if c == engine.keys['.'] or c == engine.keys['5'] then
     if selected.target then
       selected.updated = false
+    else
+      selected.updated = true
     end
     return true
   end
@@ -460,15 +462,68 @@ function control()
 
   -- cast a spell
   if c == engine.keys.z then
+    -- select spell
+
     engine.ui.clear()
     engine.ui.gotoxy(0, 0)
     engine.ui.putstr("Choose a spell to cast")
 
     local options = {}
-    for i, sp in selected.spells do
+    for i, sp in ipairs(selected.spells) do
       options[i] = sp.name
     end
     options[#options+1] = "Cancel"
+
+    local choice = util.choose(options)
+    if choice > #selected.spells then
+      log.log("Nevermind")
+      return false
+    end
+
+    local spel = selected.spells[choice]
+    if spel.mp > selected.mp then
+      log.log("Not enough MP")
+      return false
+    end
+
+    -- select tile
+
+    engine.ui.clear()
+    engine.ui.gotoxy(0, 0)
+    engine.ui.putstr("Casting " .. spel.name)
+
+    local cursor = {x=selected.x, y=selected.y}
+
+    while true do
+      local c = engine.getch()
+      local mov = util.control_movement(c)
+      if mov.x ~= 0 or mov.y ~= 0 then
+        cursor.x = cursor.x + mov.x
+        cursor.y = cursor.y + mov.y
+        util.limit_cursor(cursor, actor.map.w, actor.map.h)
+        engine.cursor(cursor.x, cursor.y)
+      elseif c == engine.keys['return'] or c == engine.keys['.'] then
+        break
+      else
+        log.log("Nevermind")
+        return false
+      end
+    end
+
+    -- cast
+
+    if not selected:can_see(cursor.x, cursor.y) then
+      log.log("Must have clear line to target")
+      return false
+    end
+
+    if not game.current_level:actor_at(cursor.x, cursor.y) then
+      log.log("No creatures here")
+      return false
+    end
+
+    selected:cast_spell(selected.spells[choice], cursor.x, cursor.y)
+    return true
   end
 
   return false

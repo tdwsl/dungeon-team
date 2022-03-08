@@ -192,6 +192,7 @@ function actor:new(type, level, ally, x, y)
   for i, s in ipairs(type.spells) do
     a.spells[#a.spells+1] = s
   end
+  a.effects = {}
 
   -- equip any equippable items
   a.equipped = {}
@@ -237,7 +238,8 @@ function actor:brief_description()
   end
   if self.undead and self.hp > 0 then
     str = str .. " (undead)"
-  elseif self.hp < 0 then
+  end
+  if self.hp < 0 then
     str = str .. " (dead)"
   end
 
@@ -441,19 +443,6 @@ function actor:hit_actor(a)
 end
 
 function actor:cast_spell(spel, x, y)
-  for i, sp in ipairs(self.spells) do
-    if sp == spel then break end
-    if i == #self.spells then return false end
-  end
-
-  if not self:can_see(x, y) then
-    return false
-  end
-
-  if self.mp - spel.mp < 0 then
-    return false
-  end
-
   local casted = false
 
   for i, a in ipairs(actor.actors) do
@@ -471,6 +460,51 @@ function actor:cast_spell(spel, x, y)
   end
 end
 
+function actor:update_effect(eff)
+  if self.hp <= 0 then return end
+
+  self.hp = self.hp + eff.effect.hp
+  if eff.effect.hp < 0 then
+    log.log(self.name .. " takes " .. eff.effect.hp*-1 .. " damage")
+  end
+  if self.hp <= 0 then
+    log.log(self.name .. " dies")
+    self.graphic = 31
+  end
+
+  self.mp = self.mp + eff.effect.mp
+  if self.mp < 0 then
+    self.mp = 0
+  end
+
+  eff.duration = eff.duration - 1
+  if eff.duration > 0 then
+    return true
+  end
+
+  for i, ef in ipairs(self.effects) do
+    if ef == eff then
+      self.effects[i] = self.effects[#self.effects]
+      self.effects[#self.effects] = nil
+      return false
+    end
+  end
+end
+
+function actor:add_effect(eff)
+  self.effects[#self.effects+1] = {effect=eff, duration=eff.duration}
+  self:update_effect(self.effects[#self.effects])
+end
+
+function actor:update_effects()
+  local i = 1
+  while i <= #self.effects do
+    if self:update_effect(self.effects[i]) then
+      i = i - 1
+    end
+  end
+end
+
 function actor:update()
   if self.hp <= 0 then
     return
@@ -485,6 +519,12 @@ function actor:update()
       self.regen_cooldown = self.regen_cooldown - 1
     end
   end
+
+  if self.mp < self.maxmp then
+    self.mp = self.mp + 1
+  end
+
+  self:update_effects()
 
   if self.updated then
     self.updated = false
@@ -528,7 +568,7 @@ function actor:can_see(x, y, r)
 
     if tile.blocks(actor.map:get_tile(tx, ty)) then
       fail = fail + 1
-      if fail > 2 then
+      if fail >= 2 then
         break
       end
     end
