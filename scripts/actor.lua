@@ -460,7 +460,7 @@ function actor:update()
     return
   end
 
-  if self.target then
+  if self.target and not self.target.ally == self.ally then
     self:follow_target()
   else
     for i, a in ipairs(actor.actors) do
@@ -470,6 +470,9 @@ function actor:update()
           break
         end
       end
+    end
+    if self.target then
+      self:follow_target()
     end
   end
 end

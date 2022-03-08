@@ -67,6 +67,21 @@ function draw_ui()
 end
 
 function party_gathered()
+  local avg = {x=0, y=0}
+  for i, a in ipairs(party) do
+    avg.x = avg.x + a.x
+    avg.y = avg.y + a.y
+  end
+  avg.x = avg.x / #party
+  avg.y = avg.y / #party
+
+  for i, a in ipairs(party) do
+    local xd, yd = avg.x-a.x, avg.y-a.y
+    if xd*xd+yd*yd > 4*4 then
+      return false
+    end
+  end
+
   return true
 end
 
@@ -182,6 +197,9 @@ function control()
 
   -- wait/continue
   if c == engine.keys['.'] or c == engine.keys['5'] then
+    if selected.target then
+      selected.updated = false
+    end
     return true
   end
 
@@ -415,6 +433,7 @@ function control()
     game.current_level:exit()
     game.dungeons.level = game.dungeons.level + 1
     game.current_level = game.dungeons[game.dungeons.level]
+    game.current_level.entrance = {x=selected.x, y=selected.y}
     game.current_level:enter(party)
     return true
   end
@@ -431,10 +450,11 @@ function control()
       return false
     end
 
+    local x, y = game.current_level.entrance.x, game.current_level.entrance.y
     game.current_level:exit()
     game.dungeons.level = game.dungeons.level - 1
     game.current_level = game.dungeons[game.dungeons.level]
-    game.current_level:enter(party)
+    game.current_level:enter(party, x, y)
     return true
   end
 

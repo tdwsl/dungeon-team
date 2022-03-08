@@ -105,7 +105,7 @@ function level:init()
   self.remembered = true
 end
 
-function level:enter(party)
+function level:enter(party, x, y)
   self.party = party
 
   if not self.generated then
@@ -119,11 +119,17 @@ function level:enter(party)
     self.actors[#self.actors+1] = a
   end
 
-  local entrance = {x=0, y=0}
-  for i = 1, self.map.w*self.map.h-1 do
-    if self.map.map[i] == tile.upstairs then
-      entrance = {x=i%self.map.w, y=math.floor(i/self.map.w)}
-      break
+  local entrance
+
+  if x ~= nil and y ~= nil then
+    entrance = {x=x, y=y}
+  else
+    entrance = {x=0, y=0}
+    for i = 1, self.map.w*self.map.h-1 do
+      if self.map.map[i] == tile.upstairs then
+        entrance = {x=i%self.map.w, y=math.floor(i/self.map.w)}
+        break
+      end
     end
   end
 
