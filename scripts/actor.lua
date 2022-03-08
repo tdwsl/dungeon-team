@@ -479,7 +479,7 @@ function actor:can_see(x, y, r)
     r = 6
   end
 
-  local a = math.atan2(y-self.y, x-self.x)
+  local a = math.atan(y-self.y, x-self.x)
   local sina, cosa = math.sin(a), math.cos(a)
 
   local fail = 0

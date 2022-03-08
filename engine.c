@@ -425,21 +425,21 @@ void addLibrary(lua_State *l) {
   }
 
 #ifndef DT_CURSES
-  const int syms[] = {
+  static const int syms[] = {
     SDLK_UP, SDLK_DOWN,
     SDLK_LEFT, SDLK_RIGHT,
     SDLK_RETURN, SDLK_BACKSPACE,
     SDLK_TAB,
   };
 #else
-  const int syms[] = {
+  static const int syms[] = {
     KEY_UP, KEY_DOWN,
     KEY_LEFT, KEY_RIGHT,
     '\n', KEY_BACKSPACE,
     KEY_STAB,
   };
 #endif
-  const char *strs[] = {
+  static const char *strs[] = {
     "up", "down",
     "left", "right",
     "return", "backspace",
