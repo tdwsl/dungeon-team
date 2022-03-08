@@ -362,7 +362,7 @@ function control()
 
     local items = {}
     for i, it in ipairs(selected.inventory) do
-      if it.type == it.armor or it.type == it.melee or it.type == it.ranged then
+      if it.type == item.armor or it.type == item.melee or it.type == item.ranged then
         local already = false
         for j, e in ipairs(selected.equipped) do
           if it.base == e.base and it.level == e.level then

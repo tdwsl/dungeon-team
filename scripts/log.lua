@@ -12,7 +12,9 @@ function log.update()
   local i = 1
   while i <= #log.logs do
     if log.logs[i].old then
-      log.logs[i] = log.logs[#log.logs]
+      for j = i, #log.logs do
+        log.logs[j] = log.logs[j+1]
+      end
       log.logs[#log.logs] = nil
       i = i - 1
     else
@@ -25,7 +27,7 @@ end
 function log.draw()
   local w, h = engine.ui.wh()
   for i, l in ipairs(log.logs) do
-    engine.ui.gotoxy(0, h-#log.logs+i-1)
+    engine.ui.gotoxy(0, h-#log.logs-1+i)
     engine.ui.putstr(l.log)
   end
 end

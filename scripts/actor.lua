@@ -470,6 +470,11 @@ function actor:update_effect(eff)
   if self.hp <= 0 then
     log.log(self.name .. " dies")
     self.graphic = 31
+    if eff.caster then
+      if eff.caster.hp > 0 then
+        eff.caster:add_xp(self.maxhp+self.str)
+      end
+    end
   end
 
   self.mp = self.mp + eff.effect.mp
@@ -491,8 +496,10 @@ function actor:update_effect(eff)
   end
 end
 
-function actor:add_effect(eff)
-  self.effects[#self.effects+1] = {effect=eff, duration=eff.duration}
+function actor:add_effect(eff, caster)
+  self.effects[#self.effects+1] = {
+    effect=eff, duration=eff.duration, caster=caster
+  }
   self:update_effect(self.effects[#self.effects])
 end
 

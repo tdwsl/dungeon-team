@@ -58,7 +58,8 @@ function spell.cast(spel, caster, castee)
     end
     util.floor_effect(effect)
 
-    castee:add_effect(effect)
+    caster:add_xp(effect.hp+spel.mp)
+    castee:add_effect(effect, caster)
   end
 end
 
