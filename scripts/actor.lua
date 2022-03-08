@@ -252,7 +252,8 @@ function actor:description()
     "DEX: " .. self.dex,
     "strength: " .. self.str,
     "ranged: " .. self.ranged,
-    "XP: " .. self.xp .. "/" .. self.maxxp
+    "XP: " .. self.xp .. "/" .. self.maxxp,
+    "Encumberance: " .. self:used_capacity() .. "/" .. self.capacity
   }
 
   return lines
@@ -510,13 +511,17 @@ function actor:is_enemy(a)
   end
 end
 
-function actor:pick_up(itm)
+function actor:used_capacity()
   local used = 0
   for i, it in ipairs(self.inventory) do
     used = used + it.size
   end
 
-  if used + itm.size > self.capacity then
+  return used
+end
+
+function actor:pick_up(itm)
+  if self:used_capacity() + itm.size > self.capacity then
     log.log(self.name .. " cannot pick up " .. itm.name)
     return false
 
