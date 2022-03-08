@@ -12,7 +12,7 @@ local item = require("scripts/item")
 local game = {
   town1 = level:new(0),
   town2 = level:new(0),
-  dungeon = level:new(1),
+  dungeons = {level:new(1), level:new(2), level:new(3), level=1},
   overmap = level:new(-1)
 }
 
@@ -22,9 +22,9 @@ local party = {
 }
 
 local selected = party[1]
-game.current_level = game.dungeon
+game.current_level = game.dungeons[game.dungeons.level]
 
-game.dungeon:enter(party)
+game.current_level:enter(party)
 
 function draw()
   game.current_level:draw()
@@ -64,6 +64,10 @@ function draw_ui()
   engine.ui.clear()
   draw_partyinfo()
   log.draw()
+end
+
+function party_gathered()
+  return true
 end
 
 function control()
@@ -392,6 +396,45 @@ function control()
 
     selected.equipped[choice] = selected.equipped[#selected.equipped]
     selected.equipped[#selected.equipped] = nil
+    return true
+  end
+
+  -- go down / enter
+  if c == engine.keys['>'] then
+    local t = game.current_level.map:get_tile(selected.x, selected.y)
+    if t ~= tile.downstairs then
+      log.log("Can't go down here")
+      return false
+    end
+
+    if not party_gathered() then
+      log.log("Party must be nearby")
+      return false
+    end
+
+    game.current_level:exit()
+    game.dungeons.level = game.dungeons.level + 1
+    game.current_level = game.dungeons[game.dungeons.level]
+    game.current_level:enter(party)
+    return true
+  end
+
+  if c == engine.keys['<'] then
+    local t = game.current_level.map:get_tile(selected.x, selected.y)
+    if t ~= tile.upstairs then
+      log.log("Can't go up here")
+      return false
+    end
+
+    if not party_gathered() then
+      log.log("Party must be nearby")
+      return false
+    end
+
+    game.current_level:exit()
+    game.dungeons.level = game.dungeons.level - 1
+    game.current_level = game.dungeons[game.dungeons.level]
+    game.current_level:enter(party)
     return true
   end
 
