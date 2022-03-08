@@ -440,6 +440,37 @@ function actor:hit_actor(a)
   end
 end
 
+function actor:cast_spell(spel, x, y)
+  for i, sp in ipairs(self.spells) do
+    if sp == spel then break end
+    if i == #self.spells then return false end
+  end
+
+  if not self:can_see(x, y) then
+    return false
+  end
+
+  if self.mp - spel.mp < 0 then
+    return false
+  end
+
+  local casted = false
+
+  for i, a in ipairs(actor.actors) do
+    if a.x == x and a.y == y then
+      spell.cast(spel, self, a)
+      casted = true
+    end
+  end
+
+  if casted then
+    self.mp = self.mp - spel.mp
+    return true
+  else
+    return false
+  end
+end
+
 function actor:update()
   if self.hp <= 0 then
     return
@@ -601,6 +632,13 @@ function actor:stats_screen()
       engine.ui.putstr("  ")
     end
     engine.ui.putstr(sitems[i])
+  end
+
+  engine.ui.gotoxy(x, #items+3)
+  engine.ui.putstr("Spells:")
+  for i, sp in ipairs(self.spells) do
+    engine.ui.gotoxy(x, #items+3+i)
+    engine.ui.putstr(sp.name)
   end
 
   engine.ui.gotoxy(1, h-1)

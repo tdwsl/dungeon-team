@@ -1,13 +1,12 @@
 -- define spells
 
 local util = require("scripts/util")
+local log = require("scripts/log")
 
 local spell = {
   healing=0,
   offensive=1,
   other=3,
-
-  log={},
 
   heal_small={type=healing, radius=0,
     level=1, mp=4, special=false,
@@ -31,7 +30,7 @@ local spell = {
       c.y = a.y
       a.x = x
       a.y = y
-      spell.log[#spell.log+1] = c.name .. " swapped places with " .. a.name
+      log.log(c.name .. " swapped places with " .. a.name)
     end,
     name="Swap small",
     desc="Swap places with a creature below a certain level"
@@ -39,12 +38,7 @@ local spell = {
 }
 
 function spell.cast(spel, caster, castee)
-  if caster.mp < spel.mp then
-    spell.log[#spell.log+1] = "Not enough MP to cast ".. spell.name .."!"
-    return false
-  end
-
-  caster.mp = caster.mp - spel.mp
+  log.log(caster.name .. " casts " .. spel.name .. " on " .. castee.name)
 
   if spel.special then
     if caster.level < spel.level then
@@ -66,8 +60,6 @@ function spell.cast(spel, caster, castee)
 
     castee:add_effect(effect)
   end
-
-  return true
 end
 
 return spell
