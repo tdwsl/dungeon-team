@@ -4,6 +4,7 @@ local actor = require("scripts/actor")
 local map = require("scripts/map")
 local item = require("scripts/item")
 local tile = require("scripts/tile")
+local log = require("scripts/log")
 
 local level = {}
 
@@ -213,6 +214,10 @@ function level:draw()
       engine.draw_actor(a)
     end
   end
+
+  if self.projectile then
+    engine.draw_item(self.projectile)
+  end
 end
 
 function level:items_at(x, y)
@@ -288,6 +293,58 @@ function level:update()
     end
     i = i + 1
   end
+end
+
+function level:fire_projectile(shooter, xm, ym, itm, dist)
+  if dist == nil then dist = 6 end
+
+  local has = false
+  for i, it in ipairs(shooter.inventory) do
+    if it.base == itm.base and it.level == itm.level then
+      shooter.inventory[i] = shooter.inventory[#shooter.inventory]
+      shooter.inventory[#shooter.inventory] = nil
+      has = true
+      break
+    end
+  end
+  if not has then
+    for i, it in ipairs(shooter.equipped) do
+      if it.base == itm.base and it.level == itm.level then
+        shooter.equipped[i] = shooter.equipped[#shooter.equipped]
+        shooter.equipped[#shooter.equipped] = nil
+        has = true
+        break
+      end
+    end
+    if not has then return end
+  end
+
+  self.projectile = itm
+
+  for d = 1, dist do
+    itm.x, itm.y = shooter.x+xm*d, shooter.y+ym*d
+    engine.delay(0.1)
+
+    if tile.blocks(self.map:get_tile(itm.x, itm.y)) then
+      itm.x, itm.y = shooter.x+xm*(d-1), shooter.y+ym*(d-1)
+      self.projectile = nil
+      self.items[#self.items+1] = itm
+      return
+    end
+
+    for i, a in ipairs(self.actors) do
+      if shooter:is_enemy(a) and a.hp > 0 then
+        if self.projectile.x == a.x and self.projectile.y == a.y then
+          shooter:hit_projectile(a, itm)
+          self.projectile = nil
+          return
+        end
+      end
+    end
+  end
+
+  self.projectile = nil
+  self.items[#self.items+1] = itm
 end
 
 return level

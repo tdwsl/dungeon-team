@@ -442,6 +442,71 @@ function actor:hit_actor(a)
   end
 end
 
+function actor:calculate_ranged(a, wep, amm)
+  local damage = {sharp=amm.sharp, blunt=amm.blunt}
+  damage.sharp = util.nzfloor(damage.sharp * (2-1/(self.ranged*wep.ranged/2)))
+  damage.blunt = util.nzfloor(damage.blunt * (2-1/(self.ranged*wep.ranged/2)))
+
+  local ac = a:calculate_ac()
+
+  damage.blunt = damage.blunt - math.floor(ac*0.5)
+  if damage.blunt < 0 then damage.blunt = 0 end
+  damage.sharp = damage.sharp - math.floor(ac*0.8)
+  if damage.sharp < 0 then damage.sharp = 0 end
+
+  local xd, yd = a.x - self.x, a.y - self.y
+  if xd >= -1 and xd <= 1 and yd >= -1 and yd <= 1 then
+    damage.sharp = util.nzfloor(damage.sharp / 6)
+    damage.blunt = util.nzfloor(damage.blunt / 4)
+  end
+
+  return damage
+end
+
+function actor:hit_projectile(a, itm)
+  local damage = {sharp=0, blunt=1}
+
+  if itm.type == item.ammo then
+    local compatible = false
+    local ci
+    for i, it in ipairs(self.equipped) do
+      if it.type == item.ranged and it.ammo == itm.base then
+        compatible = true
+        ci = it
+        break
+      end
+    end
+
+    if compatible then
+      damage = self:calculate_ranged(a, ci, itm)
+      if math.random(2) == 2 then
+        itm.x, itm.y = a.x, a.y
+        actor.items[#actor.items+1] = itm
+      end
+    end
+  else
+    if itm.type == item.melee and itm.size <= 3 then
+      damage = self:calculate_melee()
+      damage.sharp = math.floor((damage.sharp/4)*self.dex)
+      damage.blunt = math.floor((damage.blunt/6)*self.dex)
+    end
+
+    itm.x, itm.y = a.x, a.y
+    actor.items[#actor.items+1] = itm
+  end
+
+  local hp = math.floor(damage.blunt/2 + damage.sharp/2)
+  a.hp = a.hp - hp
+
+  local str = itm.name .. " hits " .. a.name .. " - "
+  if a.hp <= 0 then
+    a.graphic = 31
+    log.log(str .. a.name .. " dies!")
+  else
+    log.log(str .. hp .. " damage")
+  end
+end
+
 function actor:cast_spell(spel, x, y)
   local casted = false
 

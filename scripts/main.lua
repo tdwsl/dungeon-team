@@ -526,6 +526,49 @@ function control()
     return true
   end
 
+  -- fire weapon
+  if c == engine.keys.f then
+    -- find weapon
+    local weapon = nil
+    for i, it in ipairs(selected.equipped) do
+      if it.type == ranged then
+        weapon = it
+        break
+      end
+    end
+    if not weapon then
+      log.log("No weapon to fire")
+      return false
+    end
+
+    local ammo
+    for i, it in ipairs(selected.inventory) do
+      if it.base == weapon.ammo then
+        ammo = it
+      end
+    end
+    if not ammo then
+      log.log("No ammo")
+      return false
+    end
+
+    -- choose direction to fire
+    engine.ui.clear()
+    engine.ui.gotoxy(0, 0)
+    engine.ui.putstr("Choose a direction to fire")
+
+    local c = engine.getch()
+    local mov = util.control_movement(c)
+    if mov.x == 0 and mov.y == 0 then
+      log.log("Nevermind")
+      return false
+    end
+
+    game.current_level:fire_projectile(selected, mov.x, mov.y, ammo,
+        4+math.floor(selected.ranged/2))
+    return true
+  end
+
   return false
 end
 

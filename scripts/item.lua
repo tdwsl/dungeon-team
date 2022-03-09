@@ -36,7 +36,7 @@ local item = {
     mod={size=0, sharp=0.5, blunt=0.05},
     name="Longsword", value=150, graphic=0
   },
-  bow={type=ranged, size=8, ranged=6, speed=4, ammo="arrow",
+  bow={type=ranged, size=8, ranged=6, speed=4, ammo=nil,
     mod={size=0.1, ranged=0.6, speed=0.3},
     name="Bow", value=150, graphic=2
   },
@@ -80,6 +80,7 @@ local item = {
     name="Book of Basic Offensive Magic", value=140, graphic=8
   }
 }
+item.bow.ammo = item.arrow
 
 function item.type_is_leveled(t)
   if t == item.spellbook or t == item.comestible or t == item.ammo then
@@ -98,6 +99,7 @@ function item:calculate_stats()
   self.name = self.base.name
   self.graphic = self.base.graphic
   self.twohands = self.base.twohands
+  self.ammo = self.base.ammo
   local mul = self.level-1
 
   self.value = util.nzfloor(self.base.value * (1 + 0.2*mul))
@@ -144,6 +146,9 @@ function item:new(itm, lvl, x, y)
     it.graphic = itm.graphic
     it.name = itm.name
     it.level = 1
+    it.ammo = itm.ammo
+    it.sharp = itm.sharp
+    it.blunt = itm.blunt
   end
 
   it.x = x

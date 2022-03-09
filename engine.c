@@ -330,15 +330,17 @@ void draw(lua_State *l) {
 }
 
 int l_delay(lua_State *l) {
-  int delay = lua_tonumber(l, 1);
+  float delay = lua_tonumber(l, 1);
   lua_pop(l, -1);
 
-  clock_t start = clock();
+  draw(l);
 
+  clock_t start = clock();
   while(true) {
-    draw(l);
     clock_t currentTime = clock();
-    if(currentTime-start > delay)
+    float diff = (float)(currentTime-start)/(float)CLOCKS_PER_SEC;
+
+    if(diff > delay)
       break;
   }
 
