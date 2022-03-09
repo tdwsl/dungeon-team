@@ -10,19 +10,25 @@ local log = require("scripts/log")
 local item = require("scripts/item")
 local overworld = require("scripts/overworld")
 
-local game = {
-  dungeons = {},
-  towns = {level:new(0), level:new(0)},
-  depth=1
-}
+local game, party, selected
+local quit_game = false
 
-local party = {
-  actor:new(actor.ranger, 2, true),
-  actor:new(actor.wizard, 2, true),
-  actor:new(actor.warrior, 2, true)
-}
+function reset()
+  game = {
+    dungeons = {},
+    towns = {}
+  }
 
-local selected = party[1]
+  party = {
+    actor:new(actor.ranger, 2, true),
+    actor:new(actor.wizard, 2, true),
+    actor:new(actor.warrior, 2, true)
+  }
+
+  selected = party[1]
+
+  navigate_overworld()
+end
 
 function navigate_overworld()
   for i, d in ipairs(game.dungeons) do
@@ -56,6 +62,7 @@ function navigate_overworld()
     end
   end
 
+  if game.towns[n] == nil then game.towns[n] = level:new(0) end
   game.towns[n]:enter(party)
   game.current_level = game.towns[n]
 end
@@ -666,13 +673,20 @@ end
 
 function gameover()
   engine.ui.clear()
-  local text = "Game over!"
+  local text = "Game over! - 'r' to restart, 'q' to quit"
   local w, h = engine.ui.wh()
   engine.ui.gotoxy(math.floor(w/2-#text/2), math.floor(h/2))
   engine.ui.putstr(text)
 
   while true do
     local c = engine.getch()
+    if c == engine.keys.q then
+      quit_game = true
+      break
+    elseif c == engine.keys.r then
+      reset()
+      break
+    end
   end
 end
 
@@ -684,19 +698,26 @@ function victory()
   engine.ui.putstr(text)
 
   while true do
-    engine.getch()
+    local c = engine.getch()
+    if c == engine.keys.q then
+      quit_game = true
+      break
+    elseif c == engine.keys.r then
+      reset()
+      break
+    end
   end
 end
 
 -- begin
 
-navigate_overworld()
+reset()
 --[[local it = item:new(item.amulet_of_yendor, 1)
 it.x = selected.x-1
 it.y = selected.y
 game.current_level.items[#game.current_level.items+1] = it]]--
 
-while true do
+while not quit_game do
   log.update()
   if control() then
     game.current_level:update()
