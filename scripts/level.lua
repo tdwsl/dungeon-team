@@ -85,7 +85,7 @@ function level:init()
 
   -- scatter enemies and items
   if self.depth == 0 then
-    actor.scatter(actor.townsperson, 1, 6 + math.random(8))
+    self:scatter_actors(actor.townsperson, 1, 6 + math.random(8))
   elseif self.depth > 0 then
     -- enemies
     if self.depth < 3 then
@@ -111,9 +111,11 @@ function level:enter(party, x, y)
 
   if not self.generated then
     self:generate()
-  end
-  if not self.remembered then
     self:init()
+  elseif not self.remembered then
+    local items = self.items
+    self:init()
+    self.items = items
   end
 
   for i, a in ipairs(self.party) do
@@ -191,7 +193,7 @@ function level:forget()
   end
 
   self.fov = nil
-  self.items = {}
+  --self.items = {}
   self.actors = {}
   self.remembered = false
 end

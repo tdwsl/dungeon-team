@@ -8,12 +8,12 @@ local util = require("scripts/util")
 local dirs = require("scripts/dirs")
 local log = require("scripts/log")
 local item = require("scripts/item")
+local overworld = require("scripts/overworld")
 
 local game = {
-  town1 = level:new(0),
-  town2 = level:new(0),
-  dungeons = {level:new(1), level:new(2), level:new(3), level=1},
-  overmap = level:new(-1)
+  dungeons = {level:new(1), level:new(2), level:new(3)},
+  towns = {level:new(0), level:new(0)},
+  depth=1
 }
 
 local party = {
@@ -22,12 +22,46 @@ local party = {
 }
 
 local selected = party[1]
-game.current_level = game.dungeons[game.dungeons.level]
 
-game.current_level:enter(party)
+function navigate_overworld()
+  for i, d in ipairs(game.dungeons) do
+    if d.remembered then
+      d:forget()
+    end
+  end
+
+  for i, a in ipairs(party) do
+    a.hp = a.maxhp
+    a.mp = a.maxmp
+  end
+
+  log.logs = {}
+  overworld.navigate(selected)
+  game.depth = 1
+
+  if overworld.map:get_tile(overworld.x, overworld.y) == tile.dungeon then
+    game.dungeons[game.depth]:enter(party)
+    game.current_level = game.dungeons[game.depth]
+    return
+  end
+
+  local n = 0
+  for i = 0, overworld.y*overworld.map.w+overworld.x do
+    if overworld.map.map[i] == tile.town then
+      n = n + 1
+    end
+  end
+
+  game.towns[n]:enter(party)
+  game.current_level = game.towns[n]
+end
 
 function draw()
-  game.current_level:draw()
+  if overworld.active then
+    overworld.draw()
+  else
+    game.current_level:draw()
+  end
 end
 
 function draw_partyinfo()
@@ -433,8 +467,8 @@ function control()
     end
 
     game.current_level:exit()
-    game.dungeons.level = game.dungeons.level + 1
-    game.current_level = game.dungeons[game.dungeons.level]
+    game.depth = game.depth + 1
+    game.current_level = game.dungeons[game.depth]
     game.current_level.entrance = {x=selected.x, y=selected.y}
     game.current_level:enter(party)
     return true
@@ -452,12 +486,18 @@ function control()
       return false
     end
 
-    local x, y = game.current_level.entrance.x, game.current_level.entrance.y
+    -- go up
     game.current_level:exit()
-    game.dungeons.level = game.dungeons.level - 1
-    game.current_level = game.dungeons[game.dungeons.level]
-    game.current_level:enter(party, x, y)
-    return true
+    game.depth = game.depth - 1
+
+    if game.depth >= 1 then
+      local x, y = game.current_level.entrance.x, game.current_level.entrance.y
+      game.current_level = game.dungeons[game.depth]
+      game.current_level:enter(party, x, y)
+      return false
+    else
+      navigate_overworld()
+    end
   end
 
   -- cast a spell
@@ -583,6 +623,10 @@ function gameover()
     local c = engine.getch()
   end
 end
+
+-- begin
+
+navigate_overworld()
 
 while true do
   log.update()

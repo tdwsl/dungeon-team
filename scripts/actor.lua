@@ -502,8 +502,10 @@ function actor:hit_projectile(a, itm)
   if a.hp <= 0 then
     a.graphic = 31
     log.log(str .. a.name .. " dies!")
+    self:add_xp(a.maxhp)
   else
     log.log(str .. hp .. " damage")
+    self:add_xp(2)
   end
 end
 
