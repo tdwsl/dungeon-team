@@ -11,6 +11,7 @@ local log = require("scripts/log")
 local actor = {
   map = nil,
   items = nil,
+  fov = nil,
   actors = {},
 
   -- player classes
@@ -43,13 +44,13 @@ local actor = {
     mod={maxhp=0.2, str=0.1, dex=0.2, ranged=0.01, maxmp=0.6},
     inv={},
     spelltypes={healing=1.0, offensive=1.0},
-    spells={spell.fireball_small},
+    spells={spell.fireball_small, spell.heal_small},
     graphic=0
   },
   rogue = {name="Rogue",
     base={maxhp=6, str=5, dex=8, ranged=4, maxmp=2},
     mod={maxhp=0.4, str=0.4, dex=0.6, ranged=0.3, maxmp=0.1},
-    inv={{1, item.dagger}, {8, item.throwing_knives}},
+    inv={{1, item.dagger} },--, {8, item.throwing_knives}},
     spelltypes={healing=0.4, offensive=0.5},
     spells={},
     graphic=2
@@ -81,6 +82,14 @@ local actor = {
     spelltypes={healing=0, offensive=0},
     spells={},
     graphic=12, undead=true
+  },
+  orc = {name="Orc",
+    base={maxhp=9, str=16, dex=3, ranged=0, maxmp=0},
+    mod={maxhp=0.7, str=0.6, dex=0, ranged=0, maxmp=0},
+    inv={{1, item.shortsword}},
+    spelltypes={healing=0, offensive=0},
+    spells={},
+    graphic=14, undead=false
   }
 }
 
@@ -126,7 +135,7 @@ function actor:free_slots()
         armor = true
       end
     elseif it.type == item.ranged then
-      hands = hands - 1
+      hands = hands - 2
     end
   end
 
@@ -139,7 +148,7 @@ function actor:equip(itm)
   if itm.type == item.armor then
     if itm.shield and (slots.hands < 1 or slots.shield) then
       return false
-    elseif slots.armor then
+    elseif slots.armor and not itm.shield then
       return false
     end
   elseif itm.type == item.ranged then
@@ -323,7 +332,9 @@ function actor:navigate_to(tx, ty)
 
   for i, a in ipairs(actor.actors) do
     if (a.ally or a.friendly) and a.hp > 0 and a.target == self.target then
-      pmap:set_tile(a.x, a.y, -1)
+      if actor.map:get_tile(a.x, a.y) ~= tile.path then
+        pmap:set_tile(a.x, a.y, -1)
+      end
     end
   end
   pmap:set_tile(self.x, self.y, 0)
@@ -605,11 +616,15 @@ function actor:update()
     return
   end
 
+  if not self.ally and not self.friendly then
+    if util.turn % 3 == 0 then return end
+  end
+
   if self.target and not self.target.ally == self.ally then
     self:follow_target()
   else
     for i, a in ipairs(actor.actors) do
-      if self:is_enemy(a) and a.hp > 0 then
+      if self:is_enemy(a) and self:can_see(a.x, a.y) and a.hp > 0 then
         if self:can_see(a.x, a.y, 5) then
           self.target = a
           break
@@ -620,11 +635,17 @@ function actor:update()
       self:follow_target()
     end
   end
+
+  -- wander
+  if not self.target and not self.ally and util.turn % 2 == 0 and math.random(3) == 1 then
+    local d = dirs.dirs8[math.random(8)]
+    self:move(d.x, d.y)
+  end
 end
 
 function actor:can_see(x, y, r)
   if not r then
-    r = 6
+    r = 10
   end
 
   local a = math.atan(y-self.y, x-self.x)

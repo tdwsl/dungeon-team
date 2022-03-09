@@ -11,14 +11,15 @@ local item = require("scripts/item")
 local overworld = require("scripts/overworld")
 
 local game = {
-  dungeons = {level:new(1), level:new(2), level:new(3)},
+  dungeons = {},
   towns = {level:new(0), level:new(0)},
   depth=1
 }
 
 local party = {
-  actor:new(actor.ranger, 1, true),
-  actor:new(actor.wizard, 1, true)
+  actor:new(actor.ranger, 2, true),
+  actor:new(actor.wizard, 2, true),
+  actor:new(actor.warrior, 2, true)
 }
 
 local selected = party[1]
@@ -40,6 +41,9 @@ function navigate_overworld()
   game.depth = 1
 
   if overworld.map:get_tile(overworld.x, overworld.y) == tile.dungeon then
+    if not game.dungeons[game.depth] then
+      game.dungeons[game.depth] = level:new(game.depth)
+    end
     game.dungeons[game.depth]:enter(party)
     game.current_level = game.dungeons[game.depth]
     return
@@ -307,6 +311,9 @@ function control()
 
     if #items == 1 then
       if items[1].num == 1 then
+        if items[1].item.base == item.amulet_of_yendor then
+          victory()
+        end
         return selected:pick_up(items[1].item)
       else
         local num = util.amount(items[1].num)
@@ -335,6 +342,9 @@ function control()
     end
 
     if items[choice].num == 1 then
+      if items[choice].item.base == item.amulet_of_yendor then
+        victory()
+      end
       return selected:pick_up(items[choice].item)
     else
       local num = util.amount(items[choice].num)
@@ -468,6 +478,9 @@ function control()
 
     game.current_level:exit()
     game.depth = game.depth + 1
+    if not game.dungeons[game.depth] then
+      game.dungeons[game.depth] = level:new(game.depth)
+    end
     game.current_level = game.dungeons[game.depth]
     game.current_level.entrance = {x=selected.x, y=selected.y}
     game.current_level:enter(party)
@@ -571,7 +584,7 @@ function control()
     -- find weapon
     local weapon = nil
     for i, it in ipairs(selected.equipped) do
-      if it.type == ranged then
+      if it.type == item.ranged then
         weapon = it
         break
       end
@@ -624,14 +637,31 @@ function gameover()
   end
 end
 
+function victory()
+  engine.ui.clear()
+  local w, h = engine.ui.wh()
+  local text = "You found the Amulet of Yendor!"
+  engine.ui.gotoxy(math.floor(w/2-#text/2), math.floor(h/2))
+  engine.ui.putstr(text)
+
+  while true do
+    engine.getch()
+  end
+end
+
 -- begin
 
 navigate_overworld()
+--[[local it = item:new(item.amulet_of_yendor, 1)
+it.x = selected.x-1
+it.y = selected.y
+game.current_level.items[#game.current_level.items+1] = it]]--
 
 while true do
   log.update()
   if control() then
     game.current_level:update()
+    util.turn = util.turn + 1
     if selected.hp <= 0 then
       selected = party[1]
       if selected == nil then

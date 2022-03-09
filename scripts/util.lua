@@ -1,6 +1,6 @@
 -- utility functions
 
-local util = {}
+local util = {turn=0}
 
 function util.mul_effect(effect, m)
   effect.hp = effect.hp * m

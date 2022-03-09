@@ -120,7 +120,7 @@ function map:clear_visible()
   end
 end
 
-function map:generate_dungeon(depth)
+function map:generate_dungeon(depth, the_end)
   if depth >= 2 then
     self:init(60+math.random(30), 25+math.random(20), tile.none)
   else
@@ -245,7 +245,9 @@ function map:generate_dungeon(depth)
 
   -- entrance + exit
   self:set_tile(rooms[1].x, rooms[1].y, tile.upstairs)
-  self:set_tile(rooms[rn].x, rooms[rn].y, tile.downstairs)
+  if not the_end then
+    self:set_tile(rooms[rn].x, rooms[rn].y, tile.downstairs)
+  end
 
 end
 
@@ -365,6 +367,46 @@ function map:generate_overworld()
 end
 
 function map:generate_town()
+  self:init(math.random(40, 60), math.random(30, 45), tile.grass)
+
+  self.map[math.floor(self.h/2)*self.w+1] = tile.upstairs
+
+  local rn = 5
+  local i = 1
+  local fail = 0
+  while i <= rn do
+    local w, h = math.random(6, 10), math.random(4, 7)
+    local x, y = math.random(3, self.w-4-w), math.random(3, self.h-4-h)
+    local blocked = false
+    for ix = x-1, x+w do
+      for iy = y-1, y+h do
+        if self.map[iy*self.w+ix] ~= tile.grass then
+          blocked = true
+          goto out
+        end
+      end
+    end
+    ::out::
+    if blocked then
+      fail = fail + 1
+      if fail > 100 then
+        fail = 0
+        i = 0
+      else
+        i = i - 1
+      end
+      goto continue
+    end
+    for ix = x, x+w-1 do
+      for iy = y, y+h-1 do
+        self.map[iy*self.w+ix] = tile.wall
+      end
+    end
+
+    ::continue::
+    i = i + 1
+  end
+
 end
 
 return map

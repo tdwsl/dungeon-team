@@ -8,6 +8,159 @@ local log = require("scripts/log")
 
 local level = {}
 
+local specs = {
+  { -- level 1
+    actors = {
+      {type=actor.skeleton, min=0, max=1, level=1},
+      {type=actor.slime, min=2, max=3, level=1}
+    },
+    items = {
+      options=1,
+      {type=item.arrow, stack=4, num=1},
+      {type=item.shortsword, stack=1, num=1, level=1}
+    }
+  },
+  { -- level 2
+    actors = {
+      {type=actor.skeleton, min=1, max=2, level=1},
+      {type=actor.slime, min=2, max=4, level=2}
+    },
+    items = {
+      options=2,
+      {type=item.arrow, stack=4, num=2},
+      --{type=item.throwing_knives, stack=5, num=1, level=1},
+      {type=item.longsword, stack=1, num=1, level=1},
+      --{type=item.small_healing_potion, stack=2, num=1}
+    }
+  },
+  { -- level 3
+    actors = {
+      {type=actor.slime, min=8, max=14, level=4}
+    },
+    items = {
+      options=4,
+      {type=item.cloak, stack=1, num=2, level=3},
+      {type=item.leather_armor, stack=1, num=1, level=1},
+      {type=item.shortsword, stack=1, num=2, level=4},
+      {type=item.chainmail, stack=1, num=1, level=2},
+      --{type=item.novice_spellcasting, stack=1, num=1},
+      {type=item.arrow, stack=6, num=5},
+      --{type=item.basic_healing, stack=1, num=1}
+    }
+  },
+  { -- level 4
+    actors = {
+      {type=actor.slime, min=1, max=3, level=4},
+      {type=actor.skeleton, min=1, max=2, level=3}
+    },
+    items = {
+      options=2,
+      {type=item.shield, stack=1, num=1, level=3},
+      {type=item.arrow, stack=4, num=3},
+      {type=item.dagger, stack=1, num=1, level=2},
+      {type=item.shortsword, stack=1, num=1, level=3}
+    }
+  },
+  { -- level 5
+    actors = {
+      {type=actor.slime, min=1, max=3, level=4},
+      {type=actor.skeleton, min=1, max=2, level=4},
+      {type=actor.orc, min=1, max=1, level=2}
+    },
+    items = {
+      options=2,
+      {type=item.arrow, stack=4, num=4},
+      --{type=item.basic_offensive_magic, stack=1, num=1},
+      {type=item.longsword, stack=1, num=1, level=4}
+    }
+  },
+  { -- level 6
+    actors = {
+      {type=actor.skeleton, min=1, max=2, level=5},
+      {type=actor.orc, min=1, max=2, level=3}
+    },
+    items = {
+      options=2,
+      {type=item.arrow, stack=4, num=3},
+      --{type=item.throwing_knives, stack=8, num=3, level=3},
+      {type=item.shortsword, stack=1, num=2, level=5}
+    }
+  },
+  { -- level 7
+    actors = {
+      {type=actor.orc, min=5, max=9, level=10}
+    },
+    items = {
+      options=5,
+      {type=item.shield, stack=1, num=3, level=5},
+      {type=item.arrow, stack=4, num=6},
+      {type=item.dagger, stack=1, num=3, level=6},
+      {type=item.shortsword, stack=1, num=2, level=8},
+      {type=item.bow, stack=1, num=2, level=6},
+      --{type=item.healing_potion, stack=2, num=4}
+    }
+  },
+  { -- level 8
+    actors = {
+      {type=actor.slime, min=1, max=3, level=6},
+      {type=actor.skeleton, min=1, max=2, level=8},
+      {type=actor.orc, min=1, max=1, level=8}
+    },
+    items = {
+      options=2,
+      {type=item.arrow, stack=8, num=5},
+      {type=item.basic_offensive_magic, stack=1, num=1},
+      {type=item.longsword, stack=1, num=1, level=4},
+      --{type=item.healing_potion, stack=1, num=3}
+    }
+  },
+  { -- level 9
+    actors = {
+      {type=actor.slime, min=3, max=5, level=7},
+      {type=actor.skeleton, min=2, max=5, level=10},
+      {type=actor.orc, min=2, max=3, level=9}
+    },
+    items = {
+      options=3,
+      {type=item.arrow, stack=8, num=5},
+      --{type=item.basic_offensive_magic, stack=1, num=1},
+      {type=item.longsword, stack=1, num=1, level=6},
+      --{type=item.healing_potion, stack=1, num=3},
+      --{type=item.novice_spellcasting, stack=2, num=1},
+      {type=item.leather_armor, stack=1, num=2, level=8}
+    }
+  },
+  { -- level 10
+    actors = {
+      {type=actor.slime, min=6, max=5, level=9},
+      {type=actor.skeleton, min=4, max=8, level=14},
+      {type=actor.orc, min=4, max=6, level=12}
+    },
+    items = {
+      options=5,
+      {type=item.arrow, stack=8, num=5},
+      --{type=item.basic_offensive_magic, stack=1, num=1},
+      {type=item.longsword, stack=1, num=1, level=6},
+      --{type=item.healing_potion, stack=1, num=3},
+      --{type=item.novice_spellcasting, stack=2, num=1},
+      {type=item.leather_armor, stack=1, num=2, level=8},
+      {type=item.chainmail, stack=1, num=1, level=10},
+      {type=item.shield, stack=1, num=3, level=7}
+    }
+  },
+  { -- level 11 - final level
+    actors = {
+      {type=actor.slime, min=2, max=2, level=18},
+      {type=actor.orc, min=1, max=1, level=20},
+      {type=actor.rogue, min=1, max=1, level=20}
+    },
+    items = {
+      options = 1,
+      {type=item.amulet_of_yendor, min=1, max=1}
+    }
+  }
+}
+
 function level:exit()
   local i = 1
   while i <= #self.party do
@@ -58,7 +211,8 @@ function level:freexy()
 end
 
 function level:scatter_actors(type, lvl, num)
-  lvl = lvl + math.random(2)
+  lvl = lvl + math.random(2) - 1
+  if lvl <= 0 then lvl = 1 end
   for i = 1, num do
     local a = actor:new(type, lvl)
     a.x, a.y = self:freexy()
@@ -88,19 +242,37 @@ function level:init()
     self:scatter_actors(actor.townsperson, 1, 6 + math.random(8))
   elseif self.depth > 0 then
     -- enemies
-    if self.depth < 3 then
-      self:scatter_actors(actor.slime, self.depth, 2 + math.random(3))
-      self:scatter_actors(actor.skeleton, self.depth, math.random(3))
-    elseif self.level < 8 then
-      self:scatter_actors(actor.slime, self.depth, math.random(3))
-      self:scatter_actors(actor.skeleton, self.depth, 4 + math.random(3))
-    else
-      actor.scatter(actor.skeleton, self.depth, 5 + math.random(4))
+    for i, s in ipairs(specs[self.depth].actors) do
+      self:scatter_actors(s.type, s.level, math.random(s.min, s.max))
     end
+
     -- items
-    self:scatter_items(item.longsword, self.depth, 1, math.random(self.depth+1)-1)
-    self:scatter_items(item.shortsword, self.depth, 1, math.random(self.depth+1)-1)
-    self:scatter_items(item.arrow, self.depth, 4, math.random(4*self.depth+1)-1)
+    local choices = {}
+    for i = 1, specs[self.depth].items.options do
+      local ch = math.random(#specs[self.depth].items)
+      while true do
+        local unique = true
+        for j, c in ipairs(choices) do
+          if c == ch then
+            unique = false
+            break
+          end
+        end
+        if unique then break end
+
+        ch = ch + 1
+        if ch > #specs[self.depth].items then
+          ch = 1
+        end
+      end
+
+      choices[i] = ch
+    end
+
+    for i, c in ipairs(choices) do
+      local s = specs[self.depth].items[c]
+      self:scatter_items(s.type, s.level, s.stack, s.num)
+    end
   end
 
   self.remembered = true
@@ -157,6 +329,7 @@ function level:enter(party, x, y)
   actor.actors = self.actors
   actor.map = self.map
   actor.items = self.items
+  actor.fov = self.fov
 end
 
 function level:new(depth)
@@ -180,7 +353,9 @@ function level:generate()
   elseif self.depth == 0 then
     self.map:generate_town()
   else
-    self.map:generate_dungeon(self.depth)
+    local the_end
+    if self.depth >= 11 then the_end = true end
+    self.map:generate_dungeon(self.depth, the_end)
   end
 
   self.generated = true
@@ -274,7 +449,7 @@ function level:update_fov()
   self.fov:clear_visible()
   for i, a in ipairs(self.actors) do
     if a.ally and a.hp > 0 then
-      self.fov:reveal_fov(self.map, a.x, a.y, 5)
+      self.fov:reveal_fov(self.map, a.x, a.y, 8)
     end
   end
 end

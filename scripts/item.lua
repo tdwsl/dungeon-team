@@ -3,12 +3,13 @@
 local spell = require("scripts/spell")
 local util = require("scripts/util")
 
-melee=0
-ranged=1
-comestible=3
-ammo=4
-spellbook=5
-armor=6
+local melee=0
+local ranged=1
+local comestible=3
+local ammo=4
+local spellbook=5
+local armor=6
+local special=7
 
 local item = {
   melee=melee,
@@ -17,6 +18,7 @@ local item = {
   ammo=ammo,
   spellbook=spellbook,
   armor=armor,
+  special=special,
 
   log = {},
 
@@ -78,12 +80,15 @@ local item = {
   basic_offensive_magic={type=spellbook, size=3,
     spells={spell.fireball_small, spell.electricity_small},
     name="Book of Basic Offensive Magic", value=140, graphic=8
+  },
+  amulet_of_yendor={type=special, size=4, graphic=9,
+    name="Amulet of Yendor", value=2000
   }
 }
 item.bow.ammo = item.arrow
 
 function item.type_is_leveled(t)
-  if t == item.spellbook or t == item.comestible or t == item.ammo then
+  if t == item.spellbook or t == item.comestible or t == item.ammo or t == item.special then
     return false
   else
     return true
