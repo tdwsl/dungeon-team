@@ -11,7 +11,7 @@ SDL_Texture *textures[20];
 int numTextures = 0;
 
 void initSDL() {
-  assert(SDL_Init(SDL_INIT_EVERYTHING) >= 0);
+  assert(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_EVENTS|SDL_INIT_TIMER) >= 0);
 
   window = SDL_CreateWindow("Dungeon Team",
       SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,

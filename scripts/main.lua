@@ -100,6 +100,10 @@ end
 
 function draw_ui()
   engine.ui.clear()
+  local w, h = engine.ui.wh()
+  local text = "? - Help"
+  engine.ui.gotoxy(w-#text-1, 0)
+  engine.ui.putstr(text)
   draw_partyinfo()
   log.draw()
 end
@@ -121,6 +125,35 @@ function party_gathered()
   end
 
   return true
+end
+
+function draw_help()
+  local contents = {
+    "numpad/arrows/hjklyubn - movement",
+    "f - fire projectile", "c - change character", "C - close door",
+    "x - examine", ">/< - go down/up a level", "i - view status and inventory",
+    "z - cast a spell", ", - pick up an item", ". - wait a turn / continue movement",
+    "t - target position / creature"
+  }
+  engine.ui.clear()
+  engine.ui.gotoxy(0, 0)
+  engine.ui.putstr("Dungeon Team - tdwsl 7drl2022 - made with Lua")
+  local w, h = engine.ui.wh()
+
+  for i = 1, math.floor(#contents/2)+1 do
+    engine.ui.gotoxy(0, i+1)
+    engine.ui.putstr(contents[i])
+  end
+
+  for i = math.floor(#contents/2)+2, #contents do
+    engine.ui.gotoxy(math.floor(w/2), i+1-math.floor(#contents/2))
+    engine.ui.putstr(contents[i])
+  end
+
+  engine.ui.gotoxy(0, math.floor(#contents/2)+1+3)
+  engine.ui.putstr("(Press any key)")
+
+  engine.getch()
 end
 
 function control()
@@ -173,7 +206,7 @@ function control()
   if c == engine.keys.t then
     engine.ui.clear()
     engine.ui.gotoxy(0, 0)
-    engine.ui.putstr("Press '.' to target, any other key to cancel")
+    engine.ui.putstr("Press '.' or '5' to target, any other key to cancel")
     local cursor = {x=selected.x, y=selected.y}
 
     while true do
@@ -319,6 +352,7 @@ function control()
         local num = util.amount(items[1].num)
         if num == 0 then
           log.log("Nevermind")
+          return false
         else
           return selected:pick_up_amount(items[1].item, num)
         end
@@ -555,7 +589,7 @@ function control()
         cursor.y = cursor.y + mov.y
         util.limit_cursor(cursor, actor.map.w, actor.map.h)
         engine.cursor(cursor.x, cursor.y)
-      elseif c == engine.keys['return'] or c == engine.keys['.'] then
+      elseif c == engine.keys['return'] or c == engine.keys['.'] or c == engine.keys['5'] then
         break
       else
         log.log("Nevermind")
@@ -620,6 +654,11 @@ function control()
     game.current_level:fire_projectile(selected, mov.x, mov.y, ammo,
         4+math.floor(selected.ranged/2))
     return true
+  end
+
+  if c == engine.keys['?'] then
+    draw_help()
+    return false
   end
 
   return false
